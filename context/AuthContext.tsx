@@ -1,4 +1,6 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+
+
+import React, { createContext, useState, ReactNode } from 'react';
 import { User, AppView, Exam } from '../types';
 
 interface AuthContextType {
@@ -10,6 +12,7 @@ interface AuthContextType {
   setCurrentView: (view: AppView) => void;
   selectExam: (exam: Exam) => void;
   finishExam: () => void;
+  updateUser: (user: User) => void;
 }
 
 // FIX: Export AuthContext to be used in hooks/useAuth.ts
@@ -45,13 +48,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCurrentView(AppView.STUDENT_DASHBOARD);
   };
 
+  const updateUser = (newUserData: User) => {
+    setUser(newUserData);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, currentView, setCurrentView, selectedExam, selectExam, finishExam }}>
+    <AuthContext.Provider value={{ user, login, logout, currentView, setCurrentView, selectedExam, selectExam, finishExam, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+// The `useAuth` hook is defined in `/hooks/useAuth.ts` and should be imported from there.
+// This was removed to avoid code duplication.
+/*
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -59,3 +69,4 @@ export const useAuth = () => {
   }
   return context;
 };
+*/

@@ -1,52 +1,17 @@
-
-export interface User {
-  id: string; // NIS for student, username for admin
-  name: string;
-  role: 'student' | 'admin';
-  class?: string;
-  room?: string;
-}
+// --- TYPE DEFINITIONS ---
 
 export enum Role {
     STUDENT = 'student',
     ADMIN = 'admin',
 }
 
-export enum AssessmentType {
-    LITERASI = 'Literasi',
-    NUMERASI = 'Numerasi',
-    SURVEI_KARAKTER = 'Survei Karakter',
-    SURVEI_LINGKUNGAN = 'Survei Lingkungan Belajar'
-}
-
-export enum QuestionType {
-    MULTIPLE_CHOICE = 'Pilihan Ganda',
-    SURVEY = 'Survei Skala',
-}
-
-export interface Exam {
-  id: string;
-  name: string;
-  type: AssessmentType;
-  duration: number; // in minutes
-  questionCount: number;
-  token?: string;
-  startTime?: Date;
-  endTime?: Date;
-}
-
-export interface Question {
-  id: string;
-  examId: string;
-  questionText: string;
-  type: QuestionType;
-  options: { id: string, text: string }[];
-  correctAnswer?: string; // id of the correct option
-}
-
-export interface Answer {
-  questionId: string;
-  selectedOptionId: string;
+export interface User {
+    id: string;
+    name: string;
+    role: Role;
+    class?: string;
+    room?: string;
+    password?: string;
 }
 
 export interface Student {
@@ -54,14 +19,79 @@ export interface Student {
     name: string;
     class: string;
     room: string;
-    password?: string; // Only used for creation/update, not sent to client
+    password: string;
 }
+
+export enum AssessmentType {
+    LITERASI = 'Literasi',
+    NUMERASI = 'Numerasi',
+    SURVEI_KARAKTER = 'Survei Karakter',
+}
+
+export interface Exam {
+    id: string;
+    name: string;
+    type: AssessmentType;
+    duration: number; // in minutes
+    questionCount: number;
+    token?: string;
+    startTime?: Date;
+    endTime?: Date;
+}
+
+export enum QuestionType {
+    SINGLE_CHOICE = 'Pilihan Ganda',
+    MULTIPLE_CHOICE_COMPLEX = 'Pilihan Ganda Kompleks',
+    MATCHING = 'Menjodohkan',
+    SHORT_ANSWER = 'Isian Singkat',
+    ESSAY = 'Uraian',
+    SURVEY = 'Survey', // Kept for character surveys
+}
+
+export interface QuestionOption {
+    id: string;
+    text: string;
+    optionImageUrl?: string;
+}
+
+export interface MatchingPrompt {
+    id: string;
+    text: string;
+}
+
+export interface MatchingAnswer {
+    id: string;
+    text: string;
+}
+
+export interface Question {
+    id: string;
+    examId: string;
+    questionText: string;
+    questionImageUrl?: string;
+    type: QuestionType;
+    // For single/complex choice
+    options?: QuestionOption[];
+    // For matching
+    matchingPrompts?: MatchingPrompt[];
+    matchingAnswers?: MatchingAnswer[];
+    // Can be string (single choice id), string[] (complex choice ids), or Record<string, string> (matching promptId:answerId)
+    // FIX: Added Record<string, string> to support matching questions' correct answer format.
+    correctAnswer?: string | string[] | Record<string, string>;
+}
+
+export interface Answer {
+    questionId: string;
+    // Can be string (single choice, short answer, essay), string[] (complex choice), or Record<string, string> (matching)
+    value: any;
+}
+
 
 export enum StudentExamStatus {
     NOT_STARTED = 'Belum Mulai',
-    IN_PROGRESS = 'Sedang Mengerjakan',
+    IN_PROGRESS = 'Mengerjakan',
     FINISHED = 'Selesai',
-    LOGGED_OUT = 'Keluar Sesi'
+    LOGGED_OUT = 'Logout',
 }
 
 export interface MonitoredStudent {
@@ -69,9 +99,6 @@ export interface MonitoredStudent {
     name: string;
     class: string;
     status: StudentExamStatus;
-    startTime?: Date;
-    finishTime?: Date;
-    score?: number;
 }
 
 export interface ExamResult {
@@ -85,10 +112,17 @@ export interface ExamResult {
 }
 
 export enum AppView {
-    LOGIN_SELECTOR = 'LOGIN_SELECTOR',
-    STUDENT_LOGIN = 'STUDENT_LOGIN',
-    ADMIN_LOGIN = 'ADMIN_LOGIN',
-    STUDENT_DASHBOARD = 'STUDENT_DASHBOARD',
-    ADMIN_DASHBOARD = 'ADMIN_DASHBOARD',
-    STUDENT_EXAM = 'STUDENT_EXAM',
+    LOGIN_SELECTOR,
+    STUDENT_LOGIN,
+    ADMIN_LOGIN,
+    STUDENT_DASHBOARD,
+    ADMIN_DASHBOARD,
+    STUDENT_EXAM,
+}
+
+export interface ExamSettings {
+    defaultDuration: number;
+    questionDisplay: 'single' | 'all';
+    allowNavigateBack: boolean;
+    requireToken: boolean;
 }

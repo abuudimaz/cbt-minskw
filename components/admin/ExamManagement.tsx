@@ -1,185 +1,158 @@
 import React, { useState, useEffect } from 'react';
-import { Exam, AssessmentType } from '../../types';
-import { apiGetExams, apiAddExam, apiDeleteExam } from '../../services/api';
-import Card from '../shared/Card';
-import LoadingSpinner from '../shared/LoadingSpinner';
+import { Exam, Question } from '../../types';
+import { apiGetExams, apiCreateExam, apiUpdateExam, apiDeleteExam, apiImportQuestions } from '../../services/api';
 import Button from '../shared/Button';
-import Input from '../shared/Input';
+import LoadingSpinner from '../shared/LoadingSpinner';
+import Card from '../shared/Card';
+import ExamFormModal from './ExamFormModal';
+import QuestionManagementModal from './QuestionManagementModal';
+import QuestionImportModal from './QuestionImportModal';
 
 const ExamManagement: React.FC = () => {
     const [exams, setExams] = useState<Exam[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAdding, setIsAdding] = useState(false);
-    const [newExam, setNewExam] = useState({
-        name: '',
-        type: AssessmentType.LITERASI,
-        duration: 60,
-        questionCount: 20,
-        token: ''
-    });
+    const [error, setError] = useState('');
+    
+    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    
+    const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
 
     const fetchExams = async () => {
         setIsLoading(true);
-        const data = await apiGetExams();
-        setExams(data);
-        setIsLoading(false);
+        try {
+            const data = await apiGetExams();
+            setExams(data);
+        } catch (err) {
+            setError('Gagal memuat data ujian.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     useEffect(() => {
         fetchExams();
     }, []);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setNewExam(prev => ({
-            ...prev,
-            [name]: name === 'duration' || name === 'questionCount' ? parseInt(value, 10) || 0 : value
-        }));
+    const handleOpenFormModal = (exam: Exam | null) => {
+        setSelectedExam(exam);
+        setIsFormModalOpen(true);
     };
 
-    const handleAddExam = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newExam.name || newExam.duration <= 0 || newExam.questionCount <= 0) {
-            alert("Harap isi semua kolom yang wajib diisi dengan benar.");
-            return;
-        }
-        await apiAddExam({
-            name: newExam.name,
-            type: newExam.type,
-            duration: newExam.duration,
-            questionCount: newExam.questionCount,
-            token: newExam.token || undefined,
-        });
-        setNewExam({
-            name: '',
-            type: AssessmentType.LITERASI,
-            duration: 60,
-            questionCount: 20,
-            token: ''
-        });
-        setIsAdding(false);
-        fetchExams();
+    const handleOpenQuestionModal = (exam: Exam) => {
+        setSelectedExam(exam);
+        setIsQuestionModalOpen(true);
     };
 
-    const handleDeleteExam = async (examId: string, examName: string) => {
-        if (window.confirm(`Apakah Anda yakin ingin menghapus ujian "${examName}"?`)) {
-            await apiDeleteExam(examId);
-            fetchExams(); // Refresh list after deletion
+    const handleOpenImportModal = (exam: Exam) => {
+        setSelectedExam(exam);
+        setIsImportModalOpen(true);
+    };
+    
+    const handleSaveExam = async (examData: Exam | Omit<Exam, 'id' | 'questionCount'>) => {
+        try {
+            if ('id' in examData) {
+                await apiUpdateExam(examData);
+            } else {
+                await apiCreateExam(examData);
+            }
+            fetchExams();
+            setIsFormModalOpen(false);
+        } catch (err: any) {
+            alert(`Gagal menyimpan ujian: ${err.message}`);
         }
     };
+
+    const handleDeleteExam = async (examId: string) => {
+        if (window.confirm('Apakah Anda yakin ingin menghapus ujian ini? Semua soal di dalamnya juga akan terhapus.')) {
+            try {
+                await apiDeleteExam(examId);
+                fetchExams();
+            } catch (err) {
+                alert('Gagal menghapus ujian.');
+            }
+        }
+    };
+
+    const handleImportQuestions = async (examId: string, questions: Omit<Question, 'id' | 'examId'>[]) => {
+        try {
+            await apiImportQuestions(examId, questions);
+            alert(`${questions.length} soal berhasil diimpor.`);
+            fetchExams(); // To update question count
+            setIsImportModalOpen(false);
+        } catch (err: any) {
+            alert(`Gagal mengimpor soal: ${err.message}`);
+        }
+    };
+
+    if (isLoading) return <LoadingSpinner text="Memuat data ujian..." />;
+    if (error) return <p className="text-red-500">{error}</p>;
 
     return (
-        <Card title="Manajemen Ujian">
-            <div className="mb-4">
-                <Button onClick={() => setIsAdding(!isAdding)}>
-                    {isAdding ? 'Batal Tambah' : '+ Tambah Ujian Baru'}
-                </Button>
-            </div>
-
-            {isAdding && (
-                <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg transition-all duration-300">
-                    <h3 className="text-lg font-semibold mb-4 text-gray-700">Form Tambah Ujian</h3>
-                    <form onSubmit={handleAddExam} className="space-y-4">
-                        <Input
-                            id="name"
-                            name="name"
-                            label="Nama Ujian"
-                            type="text"
-                            value={newExam.name}
-                            onChange={handleInputChange}
-                            required
-                            placeholder="Contoh: Literasi Sesi 1"
-                        />
-                        <div>
-                            <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Jenis Asesmen</label>
-                            <select
-                                id="type"
-                                name="type"
-                                value={newExam.type}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm"
-                            >
-                                {Object.values(AssessmentType).map(type => (
-                                    <option key={type} value={type}>{type}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input
-                                id="duration"
-                                name="duration"
-                                label="Durasi (menit)"
-                                type="number"
-                                value={newExam.duration}
-                                onChange={handleInputChange}
-                                required
-                                min="1"
-                            />
-                            <Input
-                                id="questionCount"
-                                name="questionCount"
-                                label="Jumlah Soal"
-                                type="number"
-                                value={newExam.questionCount}
-                                onChange={handleInputChange}
-                                required
-                                min="1"
-                            />
-                        </div>
-                        <Input
-                            id="token"
-                            name="token"
-                            label="Token (Opsional)"
-                            type="text"
-                            value={newExam.token}
-                            onChange={handleInputChange}
-                            placeholder="Biarkan kosong jika tidak pakai token"
-                        />
-                        <div className="flex justify-end space-x-3 pt-2">
-                            <Button type="button" variant="secondary" onClick={() => setIsAdding(false)}>Batal</Button>
-                            <Button type="submit">Simpan Ujian</Button>
-                        </div>
-                    </form>
+        <>
+            <Card title="Manajemen Ujian & Soal">
+                <div className="mb-4 flex justify-end">
+                    <Button onClick={() => handleOpenFormModal(null)}>
+                        + Buat Ujian Baru
+                    </Button>
                 </div>
-            )}
-
-            {isLoading ? <LoadingSpinner /> : (
                 <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white">
-                        <thead className="bg-gray-100">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
                             <tr>
-                                <th className="text-left py-3 px-4 font-semibold text-sm">Nama Ujian</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm">Jenis</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm">Durasi</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm">Jumlah Soal</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm">Token</th>
-                                <th className="text-left py-3 px-4 font-semibold text-sm">Aksi</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Ujian</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durasi</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Soal</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token</th>
+                                <th className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {exams.map(exam => (
-                                <tr key={exam.id} className="border-b hover:bg-gray-50">
-                                    <td className="py-3 px-4">{exam.name}</td>
-                                    <td className="py-3 px-4">{exam.type}</td>
-                                    <td className="py-3 px-4">{exam.duration} menit</td>
-                                    <td className="py-3 px-4">{exam.questionCount}</td>
-                                    <td className="py-3 px-4 font-mono text-blue-600">{exam.token || '-'}</td>
-                                    <td className="py-3 px-4">
-                                        <button className="text-blue-500 hover:underline text-sm">Edit</button>
-                                        <button 
-                                            onClick={() => handleDeleteExam(exam.id, exam.name)} 
-                                            className="text-red-500 hover:underline text-sm ml-4"
-                                        >
-                                            Hapus
-                                        </button>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {exams.map((exam) => (
+                                <tr key={exam.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{exam.name}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exam.type}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exam.duration} menit</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exam.questionCount}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono bg-gray-100 rounded">{exam.token || '-'}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                        <Button size="sm" variant="secondary" onClick={() => handleOpenFormModal(exam)}>Edit</Button>
+                                        <Button size="sm" onClick={() => handleOpenQuestionModal(exam)}>Soal</Button>
+                                        <Button size="sm" variant="secondary" onClick={() => handleOpenImportModal(exam)}>Import</Button>
+                                        <Button size="sm" variant="danger" onClick={() => handleDeleteExam(exam.id)}>Hapus</Button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+            </Card>
+
+            <ExamFormModal 
+                isOpen={isFormModalOpen}
+                onClose={() => setIsFormModalOpen(false)}
+                onSave={handleSaveExam}
+                exam={selectedExam}
+            />
+            {selectedExam && (
+                <>
+                    <QuestionManagementModal
+                        isOpen={isQuestionModalOpen}
+                        onClose={() => setIsQuestionModalOpen(false)}
+                        exam={selectedExam}
+                        onQuestionsUpdate={fetchExams}
+                    />
+                    <QuestionImportModal
+                        isOpen={isImportModalOpen}
+                        onClose={() => setIsImportModalOpen(false)}
+                        exam={selectedExam}
+                        onImport={handleImportQuestions}
+                    />
+                </>
             )}
-        </Card>
+        </>
     );
 };
 

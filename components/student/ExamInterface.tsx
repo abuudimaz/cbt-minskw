@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Exam, Question, Answer } from '../../types';
 import { apiGetQuestionsForExam, apiSubmitAnswers } from '../../services/api';
@@ -17,7 +16,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ exam }) => {
     const { user, finishExam } = useAuth();
     const [questions, setQuestions] = useState<Question[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [answers, setAnswers] = useState<Map<string, string>>(new Map());
+    const [answers, setAnswers] = useState<Map<string, any>>(new Map());
     const [timeLeft, setTimeLeft] = useState(exam.duration * 60);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,9 +25,9 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ exam }) => {
     const handleSubmit = useCallback(async () => {
         if (!user) return;
         setIsSubmitting(true);
-        const finalAnswers: Answer[] = Array.from(answers.entries()).map(([questionId, selectedOptionId]) => ({
+        const finalAnswers: Answer[] = Array.from(answers.entries()).map(([questionId, value]) => ({
             questionId,
-            selectedOptionId,
+            value,
         }));
         try {
             await apiSubmitAnswers(user.id, exam.id, finalAnswers);
@@ -67,8 +66,8 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ exam }) => {
     }, [timeLeft, isLoading, isFinished, handleSubmit]);
 
 
-    const handleSelectAnswer = (questionId: string, optionId: string) => {
-        setAnswers(prev => new Map(prev).set(questionId, optionId));
+    const handleSelectAnswer = (questionId: string, value: any) => {
+        setAnswers(prev => new Map(prev).set(questionId, value));
     };
 
     const handleNavigation = (direction: 'next' | 'prev') => {

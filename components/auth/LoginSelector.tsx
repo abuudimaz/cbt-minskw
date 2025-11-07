@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
@@ -10,9 +9,14 @@ const LoginSelector: React.FC = () => {
     
     return (
         <div className="max-w-md mx-auto mt-10">
-            <Card title="Selamat Datang di Aplikasi ANBK">
+            <Card>
                 <div className="text-center">
-                    <p className="text-gray-600 mb-6">Silakan pilih peran Anda untuk masuk.</p>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                        Selamat Datang di Aplikasi CBT MIN Singkawang.
+                    </h2>
+                    <p className="text-gray-600 mb-8">
+                        Silakan pilih peran Anda untuk masuk.
+                    </p>
                     <div className="space-y-4">
                         <Button 
                             onClick={() => setCurrentView(AppView.STUDENT_LOGIN)}

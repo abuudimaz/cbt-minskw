@@ -1,55 +1,83 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
+<html lang="id">
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CBT MIN SINGKAWANG</title>
-    <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Kementerian_Agama_new_logo.png/535px-Kementerian_Agama_new_logo.png" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Poppins & Amiri -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS JIT CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      // Custom Tailwind configuration
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
               sans: ['Poppins', 'sans-serif'],
+              amiri: ['Amiri', 'serif'],
             },
             colors: {
-              'brand-green': '#28a745',
-              'brand-green-dark': '#218838',
+              'brand-green': '#28a745', 
               'brand-blue': '#007bff',
-              'brand-blue-dark': '#0069d9',
-              'brand-gray': {
-                '50': '#f9fafb',
-                '100': '#f3f4f6',
-                '200': '#e5e7eb',
-                '300': '#d1d5db',
-                '400': '#9ca3af',
-                '500': '#6b7280',
-                '600': '#4b5563',
-                '700': '#374151',
-                '800': '#1f2937',
-                '900': '#111827',
-              },
-            },
-          },
-        },
-      };
+            }
+          }
+        }
+      }
     </script>
-  <script type="importmap">
+
+    <!-- SheetJS for Excel Import -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Import Map for React -->
+    <script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
+    "react/": "https://esm.sh/react@18.2.0/",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "lodash-es": "https://aistudiocdn.com/lodash-es@^4.17.21"
   }
 }
 </script>
+    
+    <style>
+      body {
+        font-family: 'Poppins', sans-serif;
+      }
+      .font-amiri {
+        font-family: 'Amiri', serif;
+      }
+      /* Print-specific styles */
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+      @page {
+        margin: 2cm;
+      }
+      @page a4-portrait {
+        size: A4 portrait;
+      }
+      @page f4-portrait {
+        size: 21cm 33cm portrait;
+      }
+    </style>
 </head>
-  <body class="bg-brand-gray-50">
+<body class="bg-gray-50">
+    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-  </body>
+</body>
 </html>
