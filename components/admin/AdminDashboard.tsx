@@ -29,7 +29,7 @@ const AdminDashboard: React.FC = () => {
     const ActiveComponent = componentMap[activeTab];
 
     return (
-        <div className="flex h-full bg-gray-100">
+        <div className="relative flex h-full bg-gray-100">
             <AdminSidebar
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
