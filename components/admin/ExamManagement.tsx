@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Exam, Question } from '../../types';
-import { apiGetExams, apiCreateExam, apiUpdateExam, apiDeleteExam, apiImportQuestions } from '../../services/api';
+import { apiGetExams, apiCreateExam, apiUpdateExam, apiDeleteExam, apiImportQuestions, apiUpdateExamsOrder } from '../../services/api';
 import Button from '../shared/Button';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import Card from '../shared/Card';
@@ -86,6 +86,31 @@ const ExamManagement: React.FC = () => {
         }
     };
 
+    const handleMoveExam = async (currentIndex: number, direction: 'up' | 'down') => {
+        const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+        if (newIndex < 0 || newIndex >= exams.length) {
+            return;
+        }
+
+        const reorderedExams = [...exams];
+        const [movedExam] = reorderedExams.splice(currentIndex, 1);
+        reorderedExams.splice(newIndex, 0, movedExam);
+
+        // Optimistic UI update
+        setExams(reorderedExams);
+
+        try {
+            const orderedExamIds = reorderedExams.map(exam => exam.id);
+            await apiUpdateExamsOrder(orderedExamIds);
+        } catch (err) {
+            alert('Gagal menyimpan urutan baru. Mengembalikan ke urutan sebelumnya.');
+            // Revert on error by refetching
+            fetchExams();
+        }
+    };
+
+
     if (isLoading) return <LoadingSpinner text="Memuat data ujian..." />;
     if (error) return <p className="text-red-500">{error}</p>;
 
@@ -101,6 +126,7 @@ const ExamManagement: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Urutan</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Ujian</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durasi</th>
@@ -110,8 +136,32 @@ const ExamManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {exams.map((exam) => (
+                            {exams.map((exam, index) => (
                                 <tr key={exam.id}>
+                                     <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center space-x-1">
+                                            <button
+                                                onClick={() => handleMoveExam(index, 'up')}
+                                                disabled={index === 0}
+                                                className="p-1 text-gray-500 rounded-full hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                                                title="Pindah ke atas"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                onClick={() => handleMoveExam(index, 'down')}
+                                                disabled={index === exams.length - 1}
+                                                className="p-1 text-gray-500 rounded-full hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                                                title="Pindah ke bawah"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{exam.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exam.type}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exam.duration} menit</td>

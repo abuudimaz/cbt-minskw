@@ -80,7 +80,7 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                                      className={`p-4 border rounded-lg cursor-pointer transition-colors flex items-start text-left
                                         ${isChecked ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500' : 'border-gray-300 hover:bg-gray-100'}`}
                                 >
-                                    <input type="checkbox" checked={isChecked} readOnly className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3 mt-1" />
+                                    <input type="checkbox" checked={!!isChecked} readOnly className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3 mt-1" />
                                     <div className="flex-1">
                                         <TextWithArabic text={option.text} />
                                         {option.optionImageUrl && <img src={option.optionImageUrl} alt={`Opsi ${index+1}`} className="mt-2 rounded-md max-w-xs" />}

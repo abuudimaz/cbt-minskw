@@ -56,8 +56,8 @@ const initialDb = {
         { id: 'admin', name: 'Admin Proktor', role: Role.ADMIN, password: 'admin123' },
     ],
     exams: [
-        { id: 'exam1', name: 'Asesmen Literasi Paket 1', type: AssessmentType.LITERASI, duration: 60, questionCount: 2, token: 'TOKEN123' },
-        { id: 'exam2', name: 'Asesmen Numerasi Paket 1', type: AssessmentType.NUMERASI, duration: 75, questionCount: 1 },
+        { id: 'exam1', name: 'Asesmen Literasi Paket 1', type: AssessmentType.LITERASI, duration: 60, questionCount: 2, token: 'TOKEN123', order: 0 },
+        { id: 'exam2', name: 'Asesmen Numerasi Paket 1', type: AssessmentType.NUMERASI, duration: 75, questionCount: 1, order: 1 },
     ],
     questions: [
         { id: 'q1', examId: 'exam1', questionText: 'Siapakah presiden pertama Republik Indonesia?', type: QuestionType.SINGLE_CHOICE, options: [{id: 'q1o1', text: 'Soekarno'}, {id: 'q1o2', text: 'Soeharto'}, {id: 'q1o3', text: 'B.J. Habibie'}], correctAnswer: 'q1o1' },
@@ -137,19 +137,32 @@ export const apiBulkDeleteStudents = async (nises: string[]): Promise<void> => {
 // Exam Management
 export const apiGetExams = async (): Promise<Exam[]> => {
     await delay(SIMULATED_DELAY);
-    // Recalculate question counts
-    const examsWithCounts = DB.exams.map((exam: Exam) => ({
+    
+    // Sort by existing order, putting exams without an order at the end
+    DB.exams.sort((a: Exam, b: Exam) => (a.order ?? DB.exams.length) - (b.order ?? DB.exams.length));
+
+    // Recalculate question counts and assign order if missing (self-healing)
+    const examsWithDetails = DB.exams.map((exam: Exam, index: number) => ({
         ...exam,
         questionCount: DB.questions.filter((q: Question) => q.examId === exam.id).length,
+        order: index, // Re-assign order based on the sorted list to fix any gaps
     }));
-    DB.exams = examsWithCounts;
+    
+    DB.exams = examsWithDetails;
     saveDb(DB);
+
     return [...DB.exams];
 };
 
+
 export const apiCreateExam = async (examData: Omit<Exam, 'id' | 'questionCount'>): Promise<Exam> => {
     await delay(SIMULATED_DELAY);
-    const newExam: Exam = { ...examData, id: generateId(), questionCount: 0 };
+    const newExam: Exam = {
+        ...examData,
+        id: generateId(),
+        questionCount: 0,
+        order: DB.exams.length, // Add to the end of the list
+    };
     DB.exams.push(newExam);
     saveDb(DB);
     return newExam;
@@ -170,6 +183,33 @@ export const apiDeleteExam = async (examId: string): Promise<void> => {
     DB.questions = DB.questions.filter((q: Question) => q.examId !== examId);
     saveDb(DB);
 };
+
+export const apiUpdateExamsOrder = async (orderedExamIds: string[]): Promise<void> => {
+    await delay(SIMULATED_DELAY / 2);
+    const examMap = new Map(DB.exams.map((e: Exam) => [e.id, e]));
+    const newExamOrder: Exam[] = [];
+
+    // Create the new ordered list
+    orderedExamIds.forEach((id, index) => {
+        const exam = examMap.get(id);
+        if (exam) {
+// FIX: Cast `exam` to `Exam` to resolve spread operator error with `any` type.
+            newExamOrder.push({ ...(exam as Exam), order: index });
+            examMap.delete(id);
+        }
+    });
+
+    // Append any exams that weren't in the ordered list
+    let nextOrder = newExamOrder.length;
+    examMap.forEach(exam => {
+// FIX: Cast `exam` to `Exam` to resolve spread operator error with `any` type.
+        newExamOrder.push({ ...(exam as Exam), order: nextOrder++ });
+    });
+
+    DB.exams = newExamOrder;
+    saveDb(DB);
+};
+
 
 // Question Management
 export const apiGetQuestionsForExam = async (examId: string): Promise<Question[]> => {

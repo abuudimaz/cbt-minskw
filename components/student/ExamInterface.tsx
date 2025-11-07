@@ -110,7 +110,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ exam }) => {
                 </div>
                 <div className="text-center">
                     <div className="text-sm text-gray-500">Sisa Waktu</div>
-                    <div className="text-2xl font-bold text-red-500">{formatTime(timeLeft)}</div>
+                    <div className={`text-2xl font-bold transition-colors ${timeLeft < 300 ? 'animate-pulse text-red-600' : 'text-red-500'}`}>{formatTime(timeLeft)}</div>
                 </div>
             </div>
 

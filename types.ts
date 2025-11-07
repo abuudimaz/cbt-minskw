@@ -37,6 +37,7 @@ export interface Exam {
     token?: string;
     startTime?: Date;
     endTime?: Date;
+    order?: number;
 }
 
 export enum QuestionType {
