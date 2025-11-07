@@ -33,7 +33,28 @@ const BeritaAcara: React.FC = () => {
     };
     
     const handlePrint = () => {
+        // Create a temporary stylesheet for printing
+        const style = document.createElement('style');
+        style.id = 'print-style-sheet';
+        
+        // Define the @page rule based on the selected paper size.
+        // This is a much more reliable way to set print page size.
+        const pageStyle = paperSize === 'f4' 
+            ? 'size: 21.5cm 33cm; margin: 2cm;' 
+            : 'size: A4 portrait; margin: 2cm;';
+
+        style.innerHTML = `
+            @media print {
+                @page {
+                    ${pageStyle}
+                }
+            }
+        `;
+
+        // Append the stylesheet to the head, trigger print, then remove it.
+        document.head.appendChild(style);
         window.print();
+        document.head.removeChild(style);
     };
 
     const tidakHadir = formData.totalPeserta - formData.hadir;
@@ -80,7 +101,7 @@ const BeritaAcara: React.FC = () => {
             </Card>
 
             {/* --- PRINTABLE DOCUMENT --- */}
-            <div className={`printable-content bg-white p-8 shadow-lg ${paperSize === 'a4' ? 'page-a4' : 'page-f4'}`}>
+            <div className="printable-content bg-white p-8 shadow-lg">
                 {/* KOP SURAT */}
                 <header className="text-center border-b-4 border-black pb-2">
                     <div className="flex items-center justify-center">

@@ -54,37 +54,46 @@
       .font-amiri {
         font-family: 'Amiri', serif;
       }
-      /* Print-specific styles */
+      /* Print-specific styles - DEFINITIVE FIX */
       @media print {
+        /* Hide all non-essential elements flagged with .no-print */
         .no-print {
           display: none !important;
         }
+
+        /* Ensure browser renders background colors/images */
         body {
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
-          background-color: #ffffff !important;
         }
+        
+        /* --- "Isolate and Print" Strategy --- */
+        
+        /* 1. Hide everything on the page by default */
+        body * {
+           visibility: hidden;
+        }
+        
+        /* 2. Make ONLY the printable content and all its children visible again */
+        .printable-content, .printable-content * {
+           visibility: visible;
+           /* DEFINITIVE FIX: Force text and background colors to prevent blank/unreadable prints. */
+           color: black !important;
+           background: white !important;
+        }
+        
+        /* 3. Position the printable content at the top-left of the page, taking up the full width. */
         .printable-content {
-            font-family: 'Times New Roman', Times, serif;
-            box-shadow: none !important;
-            border: none !important;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
             margin: 0 !important;
             padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-family: 'Times New Roman', Times, serif;
         }
-      }
-      @page {
-        margin: 2cm;
-      }
-      .page-a4 {
-        page: a4-portrait;
-      }
-      .page-f4 {
-        page: f4-portrait;
-      }
-       /* F4 paper size definition */
-      @page f4-portrait {
-        size: 21.5cm 33cm;
-        margin: 2cm;
       }
     </style>
 </head>

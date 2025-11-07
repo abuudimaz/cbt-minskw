@@ -36,7 +36,7 @@ const AdminDashboard: React.FC = () => {
                 isCollapsed={isSidebarCollapsed}
                 setIsCollapsed={setIsSidebarCollapsed}
             />
-            <div className={`flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'ml-20' : 'ml-64'} print:ml-0 print:p-0`}>
+            <div className={`flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
                 {ActiveComponent}
             </div>
         </div>
