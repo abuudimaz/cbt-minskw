@@ -84,6 +84,21 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ exam }) => {
         return <ExamSummary onFinish={finishExam} />;
     }
 
+    // Handle case where there are no questions for the exam
+    if (questions.length === 0) {
+        return (
+            <div className="text-center p-8 bg-white rounded-lg shadow-md">
+                <h2 className="text-xl font-semibold text-gray-800">Ujian Tidak Memiliki Soal</h2>
+                <p className="text-gray-600 mt-2 mb-6">
+                    Tidak ada soal yang ditemukan untuk asesmen ini. Silakan hubungi proktor atau guru Anda.
+                </p>
+                <Button onClick={finishExam}>
+                    Kembali ke Dashboard
+                </Button>
+            </div>
+        );
+    }
+
     const currentQuestion = questions[currentQuestionIndex];
 
     return (

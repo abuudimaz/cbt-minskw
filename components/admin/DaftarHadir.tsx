@@ -1,223 +1,152 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Exam, Student } from '../../types';
-import { apiGetExams, apiGetStudents } from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import { Student } from '../../types';
+import { apiGetStudents } from '../../services/api';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import Input from '../shared/Input';
+import { KemenagLogo } from '../../constants';
 
 const DaftarHadir: React.FC = () => {
-    const [exams, setExams] = useState<Exam[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
-    const [selectedExamId, setSelectedExamId] = useState('');
-    const [filterType, setFilterType] = useState<'class' | 'room'>('class');
-    const [filterValue, setFilterValue] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [paperSize, setPaperSize] = useState<'a4' | 'f4'>('a4');
+    const [formData, setFormData] = useState({
+        ujian: '',
+        ruang: 'RUANG 1',
+        hari: '',
+        tanggal: new Date().toISOString().split('T')[0],
+        sesi: '1',
+        pengawas: '',
+    });
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchStudents = async () => {
+            setIsLoading(true);
             try {
-                const [examData, studentData] = await Promise.all([apiGetExams(), apiGetStudents()]);
-                setExams(examData);
-                setStudents(studentData);
-                if (examData.length > 0) {
-                    setSelectedExamId(examData[0].id);
-                }
-            } catch (error) {
-                console.error("Failed to fetch data:", error);
+                const data = await apiGetStudents();
+                // Sort students by name for a consistent list
+                setStudents(data.sort((a, b) => a.name.localeCompare(b.name)));
+            } catch (err) {
+                console.error("Failed to fetch students", err);
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchData();
+        fetchStudents();
     }, []);
-
-    const uniqueClasses = useMemo(() => [...new Set(students.map(s => s.class))].sort(), [students]);
-    const uniqueRooms = useMemo(() => [...new Set(students.map(s => s.room))].sort(), [students]);
-
-    useEffect(() => {
-        if (filterType === 'class' && uniqueClasses.length > 0) {
-            setFilterValue(uniqueClasses[0]);
-        } else if (filterType === 'room' && uniqueRooms.length > 0) {
-            setFilterValue(uniqueRooms[0]);
-        }
-    }, [filterType, uniqueClasses, uniqueRooms]);
-
-    const filteredStudents = useMemo(() => {
-        if (!filterValue) return [];
-        return students.filter(student => student[filterType] === filterValue);
-    }, [students, filterType, filterValue]);
-
-    const handlePrint = () => {
-        const selectedExam = exams.find(e => e.id === selectedExamId);
-        if (!selectedExam) return;
-        
-        const printContent = `
-            <html>
-            <head>
-                <title>Daftar Hadir Peserta</title>
-                <script src="https://cdn.tailwindcss.com"></script>
-                <style>
-                    body { font-family: 'Times New Roman', serif; font-size: 11pt; }
-                    .header-table, .content-table { width: 100%; border-collapse: collapse; }
-                    .content-table th, .content-table td { border: 1px solid black; padding: 6px; }
-                    .content-table th { text-align: center; }
-                    .kop-surat { text-align: center; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 20px; }
-                    .kop-surat h3, .kop-surat h4 { margin: 0; }
-                    .signature-section { margin-top: 40px; }
-                    .signature-box { display: inline-block; width: 45%; text-align: center; }
-                </style>
-            </head>
-            <body class="p-4 ${paperSize === 'a4' ? 'a4-portrait' : 'f4-portrait'}">
-                <div class="kop-surat">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Kementerian_Agama_new_logo.png/535px-Kementerian_Agama_new_logo.png" alt="Logo" class="h-20 mx-auto mb-2"/>
-                    <h3 class="font-bold text-xl">KEMENTERIAN AGAMA REPUBLIK INDONESIA</h3>
-                    <h4 class="font-bold text-lg">KANTOR KEMENTERIAN AGAMA KOTA SINGKAWANG</h4>
-                    <h4 class="font-bold text-lg">MADRASAH IBTIDAIYAH NEGERI SINGKAWANG</h4>
-                    <p class="text-sm">Jl. Marhaban, RT 55/RW 09, Kelurahan Sedau, Kec. Singkawang Selatan, Kota Singkawang</p>
-                </div>
-
-                <div class="text-center my-6">
-                    <h3 class="text-lg font-bold underline">DAFTAR HADIR PESERTA</h3>
-                    <p>ASESMEN NASIONAL BERBASIS KOMPUTER (ANBK)</p>
-                </div>
-                
-                <table class="my-4 text-sm">
-                    <tr><td class="pr-4">Mata Pelajaran</td><td>: ${selectedExam.name}</td></tr>
-                    <tr><td>${filterType === 'class' ? 'Kelas' : 'Ruang'}</td><td>: ${filterValue}</td></tr>
-                    <tr><td>Hari, Tanggal</td><td>: ...............................................</td></tr>
-                </table>
-
-                <table class="content-table my-4">
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">No.</th>
-                            <th style="width: 15%;">NIS</th>
-                            <th>Nama Siswa</th>
-                            <th style="width: 15%;">Kelas</th>
-                            <th style="width: 25%;">Tanda Tangan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${filteredStudents.map((student, index) => `
-                            <tr>
-                                <td class="text-center">${index + 1}</td>
-                                <td class="text-center">${student.nis}</td>
-                                <td>${student.name}</td>
-                                <td class="text-center">${student.class}</td>
-                                <td class="p-2">${index % 2 === 0 ? `${index + 1}. ...............` : `&nbsp;`}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                 <div class="signature-section flex justify-between mt-12">
-                     <div class="signature-box text-center">
-                        <p>Proktor,</p>
-                        <div class="h-20"></div>
-                        <p class="name underline font-bold">..............................</p>
-                        <p>NIP. -</p>
-                    </div>
-                    <div class="signature-box text-center">
-                        <p>Pengawas,</p>
-                        <div class="h-20"></div>
-                        <p class="name underline font-bold">..............................</p>
-                        <p>NIP. -</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        `;
-        
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write(printContent);
-            printWindow.document.close();
-            printWindow.focus();
-            setTimeout(() => {
-                printWindow.print();
-            }, 500);
-        }
+    
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
-    if (isLoading) return <LoadingSpinner text="Memuat data..." />;
+    const handlePrint = () => {
+        window.print();
+    };
 
-    const filterOptions = filterType === 'class' ? uniqueClasses : uniqueRooms;
+    if (isLoading) {
+        return <LoadingSpinner text="Memuat daftar siswa..." />;
+    }
 
     return (
-        <Card title="Cetak Daftar Hadir Peserta">
-            <div className="space-y-4">
-                {/* Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-md bg-gray-50">
-                     <div>
-                        <label htmlFor="exam" className="block text-sm font-medium text-gray-700 mb-1">Pilih Ujian</label>
-                        <select id="exam" value={selectedExamId} onChange={e => setSelectedExamId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                            {exams.map(exam => <option key={exam.id} value={exam.id}>{exam.name}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label htmlFor="filterType" className="block text-sm font-medium text-gray-700 mb-1">Filter Berdasarkan</label>
-                        <select id="filterType" value={filterType} onChange={e => setFilterType(e.target.value as 'class' | 'room')} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                            <option value="class">Kelas</option>
-                            <option value="room">Ruang</option>
-                        </select>
-                    </div>
-                     <div>
-                        <label htmlFor="filterValue" className="block text-sm font-medium text-gray-700 mb-1">{filterType === 'class' ? 'Pilih Kelas' : 'Pilih Ruang'}</label>
-                        <select id="filterValue" value={filterValue} onChange={e => setFilterValue(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                             {filterOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                    </div>
+        <div>
+            {/* --- FORM INPUT (NO-PRINT) --- */}
+            <Card title="Data Daftar Hadir Peserta" className="no-print mb-8">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Input label="Mata Ujian" name="ujian" value={formData.ujian} onChange={handleInputChange} placeholder="Asesmen Numerasi Paket 1" />
+                    <Input label="Ruang" name="ruang" value={formData.ruang} onChange={handleInputChange} />
+                    <Input label="Hari" name="hari" value={formData.hari} onChange={handleInputChange} placeholder="Selasa" />
+                    <Input label="Tanggal" name="tanggal" type="date" value={formData.tanggal} onChange={handleInputChange} />
+                    <Input label="Sesi" name="sesi" value={formData.sesi} onChange={handleInputChange} />
+                    <Input label="Nama Pengawas" name="pengawas" value={formData.pengawas} onChange={handleInputChange} />
                 </div>
+                <div className="mt-6 flex items-center justify-end gap-4">
+                     <div>
+                        <label htmlFor="paperSize" className="block text-sm font-medium text-gray-700 mb-1">Ukuran Kertas</label>
+                        <select id="paperSize" value={paperSize} onChange={(e) => setPaperSize(e.target.value as 'a4' | 'f4')} className="px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                            <option value="a4">A4</option>
+                            <option value="f4">F4</option>
+                        </select>
+                    </div>
+                    <Button onClick={handlePrint} className="self-end">Cetak Daftar Hadir</Button>
+                </div>
+            </Card>
 
-                {/* Print Options */}
-                <div className="flex justify-end items-center space-x-4 p-4">
-                    <div className="flex items-center space-x-4">
-                        <label className="block text-sm font-medium text-gray-700">Ukuran Kertas:</label>
-                        <div className="flex items-center">
-                            <input type="radio" id="a4-hadir" name="paperSize-hadir" value="a4" checked={paperSize === 'a4'} onChange={() => setPaperSize('a4')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"/>
-                            <label htmlFor="a4-hadir" className="ml-2 block text-sm text-gray-900">A4</label>
-                        </div>
-                         <div className="flex items-center">
-                            <input type="radio" id="f4-hadir" name="paperSize-hadir" value="f4" checked={paperSize === 'f4'} onChange={() => setPaperSize('f4')} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"/>
-                            <label htmlFor="f4-hadir" className="ml-2 block text-sm text-gray-900">F4</label>
+            {/* --- PRINTABLE DOCUMENT --- */}
+            <div className={`printable-content bg-white p-8 shadow-lg ${paperSize === 'a4' ? 'page-a4' : 'page-f4'}`}>
+                {/* KOP SURAT */}
+                <header className="text-center border-b-4 border-black pb-2">
+                    <div className="flex items-center justify-center">
+                        <KemenagLogo className="h-20 w-20 mr-4" />
+                        <div>
+                            <p className="text-lg font-semibold">KEMENTERIAN AGAMA REPUBLIK INDONESIA</p>
+                            <p className="text-lg font-semibold">KANTOR KEMENTERIAN AGAMA KOTA SINGKAWANG</p>
+                            <p className="text-2xl font-bold">MADRASAH IBTIDAIYAH NEGERI SINGKAWANG</p>
+                            <p className="text-sm">Jl. Marhaban, RT 55/RW 09, Kelurahan Sedau, Kec. Singkawang Selatan, Kota Singkawang</p>
                         </div>
                     </div>
-                    <Button onClick={handlePrint} disabled={filteredStudents.length === 0}>
-                        Cetak Daftar Hadir
-                    </Button>
-                </div>
-
-                {/* Preview Table */}
-                <div className="overflow-x-auto">
-                    <h3 className="font-semibold text-lg mb-2">Preview Daftar Hadir ({filteredStudents.length} siswa)</h3>
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                </header>
+                
+                {/* JUDUL & DETAIL */}
+                <section className="text-center mt-8">
+                    <p className="font-bold underline text-lg">DAFTAR HADIR PESERTA</p>
+                    <p className="font-bold uppercase text-lg">ASESMEN MADRASAH BERBASIS KOMPUTER (AMBK)</p>
+                </section>
+                <table className="w-full mt-6 text-sm">
+                    <tbody>
+                        <tr>
+                            <td className="w-1/4 py-1"><strong>Mata Ujian</strong></td>
+                            <td>: {formData.ujian || '[..................................................]'}</td>
+                            <td className="w-1/4 pl-8 py-1"><strong>Ruang</strong></td>
+                            <td>: {formData.ruang}</td>
+                        </tr>
+                        <tr>
+                            <td className="py-1"><strong>Hari/Tanggal</strong></td>
+                            <td>: {formData.hari ? `${formData.hari}, ` : ''}{new Date(formData.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
+                            <td className="pl-8 py-1"><strong>Sesi</strong></td>
+                            <td>: {formData.sesi}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                {/* TABLE DAFTAR HADIR */}
+                <main className="mt-6">
+                    <table className="w-full border-collapse border border-black">
+                        <thead className="bg-gray-200 text-center">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No.</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIS</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruang</th>
+                                <th className="px-2 py-2 text-sm font-semibold border border-black w-[5%]">No.</th>
+                                <th className="px-2 py-2 text-sm font-semibold border border-black w-[15%]">NIS</th>
+                                <th className="px-2 py-2 text-sm font-semibold border border-black">Nama Siswa</th>
+                                <th className="px-2 py-2 text-sm font-semibold border border-black w-[30%]">Tanda Tangan</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredStudents.map((student, index) => (
+                        <tbody>
+                            {students.map((student, index) => (
                                 <tr key={student.nis}>
-                                    <td className="px-6 py-4">{index + 1}</td>
-                                    <td className="px-6 py-4">{student.nis}</td>
-                                    <td className="px-6 py-4">{student.name}</td>
-                                    <td className="px-6 py-4">{student.class}</td>
-                                    <td className="px-6 py-4">{student.room}</td>
+                                    <td className="px-2 py-3 text-center border border-black">{index + 1}</td>
+                                    <td className="px-2 py-3 border border-black">{student.nis}</td>
+                                    <td className="px-2 py-3 border border-black">{student.name}</td>
+                                    <td className="px-2 py-3 border border-black">
+                                        <span className="inline-block w-1/2">{index % 2 === 0 ? `${index + 1}.` : ''}</span>
+                                        <span className="inline-block w-1/2 text-right">{index % 2 !== 0 ? `${index + 1}.` : ''}</span>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
-                     {filteredStudents.length === 0 && (
-                        <p className="text-center py-4 text-gray-500">Tidak ada siswa yang cocok dengan filter yang dipilih.</p>
-                    )}
-                </div>
+                </main>
+
+                {/* TANDA TANGAN */}
+                <footer className="mt-8 flex justify-end">
+                    <div className="text-center w-1/3">
+                        <p>Singkawang, {new Date(formData.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        <p>Pengawas,</p>
+                        <div className="h-24"></div>
+                        <p className="font-bold underline">{formData.pengawas || '(______________________)'}</p>
+                    </div>
+                </footer>
             </div>
-        </Card>
+        </div>
     );
 };
 

@@ -41,12 +41,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, is
                             isCollapsed ? 'justify-center' : 'px-6'
                         } ${
                             activeTab === tab.id
-                                ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-500'
-                                : 'text-gray-600 hover:bg-gray-100'
+                                ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600 font-semibold'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
                         }`}
                     >
                         {tab.icon}
-                        {!isCollapsed && <span className="ml-4 font-medium">{tab.label}</span>}
+                        {!isCollapsed && <span className="ml-4">{tab.label}</span>}
                         
                         {/* Custom Tooltip for collapsed state */}
                         {isCollapsed && (

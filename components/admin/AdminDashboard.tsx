@@ -23,7 +23,7 @@ const componentMap: { [key in AdminTab]: React.ReactElement } = {
 };
 
 const AdminDashboard: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<AdminTab>('monitoring');
+    const [activeTab, setActiveTab] = useState<AdminTab>('exams');
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const ActiveComponent = componentMap[activeTab];
