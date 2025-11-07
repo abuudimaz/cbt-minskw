@@ -48,7 +48,7 @@ const App: React.FC = () => {
                 <main className="flex-grow">
                     <ViewRenderer />
                 </main>
-                 <footer className="text-center py-4 text-gray-500 text-sm bg-gray-100">
+                 <footer className="text-center py-4 text-gray-500 text-sm bg-gray-100 no-print">
                     <p>&copy; {new Date().getFullYear()} {APP_TITLE}. All rights reserved.</p>
                     <p className="mt-1">dev by Mahfud Sidik</p>
                 </footer>

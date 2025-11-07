@@ -8,7 +8,7 @@ const Header: React.FC = () => {
     const { user, logout } = useAuth();
 
     return (
-        <header className="bg-white shadow-md">
+        <header className="bg-white shadow-md no-print">
             <div className="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
                 <div className="flex items-center space-x-3">
                     <KemenagLogo className="h-10 w-auto" />

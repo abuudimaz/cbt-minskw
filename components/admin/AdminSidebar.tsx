@@ -22,7 +22,7 @@ const tabs: { id: AdminTab; label: string; icon: React.ReactElement }[] = [
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }) => {
     return (
-        <div className={`absolute top-0 left-0 h-full bg-white shadow-lg flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
+        <div className={`absolute top-0 left-0 h-full bg-white shadow-lg flex flex-col transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'} no-print`}>
             <div className="flex items-center justify-center h-16 border-b">
                  <img 
                     src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Kementerian_Agama_new_logo.png/535px-Kementerian_Agama_new_logo.png" 

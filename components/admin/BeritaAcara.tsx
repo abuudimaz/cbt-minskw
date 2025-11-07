@@ -9,6 +9,8 @@ const BeritaAcara: React.FC = () => {
         hari: '',
         tanggal: new Date().toISOString().split('T')[0],
         ujian: '',
+        assessmentTitle: 'ASESMEN MADRASAH BERBASIS KOMPUTER (AMBK)',
+        academicYear: '2023/2024',
         waktuMulai: '07:30',
         waktuSelesai: '09:30',
         ruang: 'RUANG 1',
@@ -18,7 +20,7 @@ const BeritaAcara: React.FC = () => {
         catatan: 'Pelaksanaan asesmen berjalan dengan lancar dan tertib. Tidak ada kendala teknis yang berarti.',
         proktor: '',
         pengawas: '',
-        kepalaSekolah: 'HASBULLAH, S.Pd.I',
+        kepalaSekolah: 'MUSLIMAH, S.Pd.I',
     });
     const [paperSize, setPaperSize] = useState<'a4' | 'f4'>('a4');
 
@@ -44,6 +46,8 @@ const BeritaAcara: React.FC = () => {
                     <Input label="Hari" name="hari" value={formData.hari} onChange={handleInputChange} placeholder="Senin" />
                     <Input label="Tanggal" name="tanggal" type="date" value={formData.tanggal} onChange={handleInputChange} />
                     <Input label="Nama Ujian/Asesmen" name="ujian" value={formData.ujian} onChange={handleInputChange} placeholder="Asesmen Literasi Paket 1" />
+                    <Input label="Judul Penilaian" name="assessmentTitle" value={formData.assessmentTitle} onChange={handleInputChange} placeholder="e.g. ASESMEN MADRASAH" />
+                    <Input label="Tahun Pelajaran" name="academicYear" value={formData.academicYear} onChange={handleInputChange} placeholder="e.g. 2023/2024" />
                     <Input label="Ruang" name="ruang" value={formData.ruang} onChange={handleInputChange} />
                     <Input label="Sesi" name="sesi" value={formData.sesi} onChange={handleInputChange} />
                     <div className="flex gap-4">
@@ -93,8 +97,8 @@ const BeritaAcara: React.FC = () => {
                 {/* JUDUL */}
                 <section className="text-center mt-8">
                     <p className="font-bold underline text-lg">BERITA ACARA PELAKSANAAN</p>
-                    <p className="font-bold uppercase text-lg">ASESMEN MADRASAH BERBASIS KOMPUTER (AMBK)</p>
-                    <p className="font-bold uppercase text-lg">TAHUN PELAJARAN 2023/2024</p>
+                    <p className="font-bold uppercase text-lg">{formData.assessmentTitle}</p>
+                    <p className="font-bold uppercase text-lg">TAHUN PELAJARAN {formData.academicYear}</p>
                 </section>
 
                 {/* ISI */}
@@ -146,7 +150,7 @@ const BeritaAcara: React.FC = () => {
                                      <p>Kepala MIN Singkawang</p>
                                      <div className="h-24"></div>
                                      <p className="font-bold underline">{formData.kepalaSekolah}</p>
-                                     <p>NIP. 197103131998031002</p>
+                                     <p>NIP. 197202162000032001</p>
                                 </td>
                             </tr>
                         </tbody>
