@@ -5,6 +5,7 @@ import Button from '../shared/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { apiStudentLogin } from '../../services/api';
 import { AppView } from '../../types';
+import { KemenagLogo, APP_TITLE } from '../../constants';
 
 const StudentLogin: React.FC = () => {
     const { login, setCurrentView } = useAuth();
@@ -46,7 +47,13 @@ const StudentLogin: React.FC = () => {
 
     return (
         <div className="max-w-md mx-auto mt-10">
-            <Card title="Login Siswa">
+            <div className="flex flex-col items-center mb-8 text-center">
+                <KemenagLogo className="h-20 w-auto mb-4" />
+                <h1 className="text-3xl font-bold text-gray-800 tracking-tight">{APP_TITLE}</h1>
+                <p className="text-gray-500 mt-1">Ujian Berbasis Komputer</p>
+            </div>
+            
+            <Card title="Login Peserta Ujian">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {error && <p className="text-red-500 text-sm text-center">{error}</p>}
                     <Input

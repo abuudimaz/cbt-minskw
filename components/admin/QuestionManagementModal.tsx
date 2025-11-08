@@ -277,7 +277,7 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
                     {isLoading && <LoadingSpinner text="Memuat soal..." />}
                     {error && <p className="text-red-500">{error}</p>}
                     {!isLoading && !error && (
-                        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                        <div className="space-y-3">
                             {questions.length > 0 ? questions.map((q, index) => (
                                 <div key={q.id} className="p-4 border rounded-lg flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
                                     <div className="flex-1 min-w-0">

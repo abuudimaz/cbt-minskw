@@ -103,7 +103,7 @@ const BeritaAcara: React.FC = () => {
             </Card>
 
             {/* --- PRINTABLE DOCUMENT --- */}
-            <div className="printable-content bg-white p-8 shadow-lg">
+            <div className="printable-content bg-white p-8 shadow-lg text-black">
                 {/* KOP SURAT */}
                 <header className="text-center border-b-4 border-black pb-2">
                     <div className="flex items-center justify-center">
@@ -125,7 +125,7 @@ const BeritaAcara: React.FC = () => {
                 </section>
 
                 {/* ISI */}
-                <main className="mt-8 text-justify leading-relaxed text-black">
+                <main className="mt-8 text-justify leading-relaxed">
                     <p>Pada hari ini, {formData.hari || '[Hari]'}, tanggal {new Date(formData.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}, telah diselenggarakan Asesmen Madrasah Berbasis Komputer untuk mata ujian <strong>{formData.ujian || '[Nama Ujian]'}</strong> dari pukul {formData.waktuMulai} sampai dengan pukul {formData.waktuSelesai} WIB.</p>
                     
                     <table className="mt-4 w-full">
