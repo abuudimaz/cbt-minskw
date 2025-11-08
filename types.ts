@@ -1,8 +1,16 @@
-// --- TYPE DEFINITIONS ---
 
 export enum Role {
     STUDENT = 'student',
     ADMIN = 'admin',
+}
+
+export enum AppView {
+    LOGIN_SELECTOR,
+    STUDENT_LOGIN,
+    ADMIN_LOGIN,
+    STUDENT_DASHBOARD,
+    ADMIN_DASHBOARD,
+    STUDENT_EXAM,
 }
 
 export interface User {
@@ -32,7 +40,7 @@ export interface Exam {
     id: string;
     name: string;
     type: AssessmentType;
-    duration: number; // in minutes
+    duration: number;
     questionCount: number;
     token?: string;
     startTime?: Date;
@@ -46,7 +54,7 @@ export enum QuestionType {
     MATCHING = 'Menjodohkan',
     SHORT_ANSWER = 'Isian Singkat',
     ESSAY = 'Uraian',
-    SURVEY = 'Survey', // Kept for character surveys
+    SURVEY = 'Survei',
 }
 
 export interface QuestionOption {
@@ -71,22 +79,16 @@ export interface Question {
     questionText: string;
     questionImageUrl?: string;
     type: QuestionType;
-    // For single/complex choice
     options?: QuestionOption[];
-    // For matching
     matchingPrompts?: MatchingPrompt[];
     matchingAnswers?: MatchingAnswer[];
-    // Can be string (single choice id), string[] (complex choice ids), or Record<string, string> (matching promptId:answerId)
-    // FIX: Added Record<string, string> to support matching questions' correct answer format.
     correctAnswer?: string | string[] | Record<string, string>;
 }
 
 export interface Answer {
     questionId: string;
-    // Can be string (single choice, short answer, essay), string[] (complex choice), or Record<string, string> (matching)
     value: any;
 }
-
 
 export enum StudentExamStatus {
     NOT_STARTED = 'Belum Mulai',
@@ -112,18 +114,14 @@ export interface ExamResult {
     submittedAt: Date;
 }
 
-export enum AppView {
-    LOGIN_SELECTOR,
-    STUDENT_LOGIN,
-    ADMIN_LOGIN,
-    STUDENT_DASHBOARD,
-    ADMIN_DASHBOARD,
-    STUDENT_EXAM,
-}
-
 export interface ExamSettings {
+    assessmentTitle: string;
     defaultDuration: number;
     questionDisplay: 'single' | 'all';
     allowNavigateBack: boolean;
     requireToken: boolean;
+    academicYear: string;
+    proctorName: string;
+    headmasterName: string;
+    headmasterNip: string;
 }

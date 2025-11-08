@@ -76,8 +76,29 @@ const ExamSettings: React.FC = () => {
                     {success && <p className="text-green-700 text-sm text-center bg-green-100 p-3 rounded-md">{success}</p>}
 
                     <div>
-                        <h3 className="text-lg font-medium text-gray-900">Pengaturan Umum</h3>
-                        <div className="mt-4 space-y-4">
+                        <h3 className="text-lg font-medium text-gray-900">Pengaturan Umum & Dokumen</h3>
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                             <div className="sm:col-span-2">
+                                <Input
+                                    label="Judul Penilaian Global"
+                                    name="assessmentTitle"
+                                    type="text"
+                                    value={settings.assessmentTitle}
+                                    onChange={handleChange}
+                                    placeholder="e.g. ASESMEN MADRASAH"
+                                />
+                                <p className="mt-1 text-sm text-gray-500">Judul ini akan muncul di kop surat Berita Acara dan Daftar Hadir.</p>
+                            </div>
+                            <div>
+                                <Input
+                                    label="Tahun Ajaran"
+                                    name="academicYear"
+                                    type="text"
+                                    value={settings.academicYear}
+                                    onChange={handleChange}
+                                    placeholder="e.g. 2023/2024"
+                                />
+                            </div>
                             <div>
                                 <Input
                                     label="Durasi Ujian Default (menit)"
@@ -86,7 +107,33 @@ const ExamSettings: React.FC = () => {
                                     value={settings.defaultDuration}
                                     onChange={handleChange}
                                 />
-                                <p className="mt-1 text-sm text-gray-500">Durasi ini akan digunakan saat membuat ujian baru.</p>
+                            </div>
+                             <div>
+                                <Input
+                                    label="Nama Proktor Default"
+                                    name="proctorName"
+                                    type="text"
+                                    value={settings.proctorName}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                             <div>
+                                <Input
+                                    label="Nama Kepala Sekolah"
+                                    name="headmasterName"
+                                    type="text"
+                                    value={settings.headmasterName}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div className="sm:col-span-2">
+                                <Input
+                                    label="NIP Kepala Sekolah"
+                                    name="headmasterNip"
+                                    type="text"
+                                    value={settings.headmasterNip}
+                                    onChange={handleChange}
+                                />
                             </div>
                         </div>
                     </div>

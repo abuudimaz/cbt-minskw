@@ -39,10 +39,15 @@ const defaultDB = {
     results: [],
     studentStatuses: {}, // { nis: { examId: string, status: StudentExamStatus } }
     settings: {
+        assessmentTitle: 'ASESMEN MADRASAH BERBASIS KOMPUTER (AMBK)',
         defaultDuration: 90,
         questionDisplay: 'single',
         allowNavigateBack: true,
         requireToken: false,
+        academicYear: '2023/2024',
+        proctorName: 'MAHFUD SIDIK',
+        headmasterName: 'MUSLIMAH, S.Pd.I',
+        headmasterNip: '197202162000032001',
     }
 };
 
@@ -52,7 +57,7 @@ const getDb = () => {
         if (dbString) {
             const db = JSON.parse(dbString);
             // Ensure all keys from defaultDB exist to handle migrations
-            return { ...defaultDB, ...db };
+            return { ...defaultDB, ...db, settings: {...defaultDB.settings, ...db.settings} };
         }
         localStorage.setItem(DB_KEY, JSON.stringify(defaultDB));
         return defaultDB;
