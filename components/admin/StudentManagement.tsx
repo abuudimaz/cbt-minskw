@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Student } from '../../types';
 import { apiGetStudents, apiDeleteStudent, apiCreateStudent, apiUpdateStudent, apiBulkDeleteStudents } from '../../services/api';
 import Button from '../shared/Button';
@@ -16,6 +16,7 @@ const StudentManagement: React.FC = () => {
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [selectedNis, setSelectedNis] = useState<string[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
+    const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
 
     const fetchStudents = async () => {
         setIsLoading(true);
@@ -79,6 +80,14 @@ const StudentManagement: React.FC = () => {
     const nisesOnCurrentPage = currentStudents.map(s => s.nis);
     const selectedOnPageCount = nisesOnCurrentPage.filter(nis => selectedNis.includes(nis)).length;
 
+    // FIX: Use a ref and useEffect to set the indeterminate property on the checkbox, as it's not a valid JSX attribute.
+    useEffect(() => {
+        if (selectAllCheckboxRef.current) {
+            const isIndeterminate = selectedOnPageCount > 0 && selectedOnPageCount < currentStudents.length;
+            selectAllCheckboxRef.current.indeterminate = isIndeterminate;
+        }
+    }, [selectedOnPageCount, currentStudents.length]);
+
     const handleSelectAllOnPage = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
             // Add all NISes from the current page to the selection, avoiding duplicates
@@ -134,11 +143,11 @@ const StudentManagement: React.FC = () => {
                             <tr>
                                 <th scope="col" className="px-6 py-3">
                                     <input 
+                                        ref={selectAllCheckboxRef}
                                         type="checkbox"
                                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         onChange={handleSelectAllOnPage}
                                         checked={currentStudents.length > 0 && selectedOnPageCount === currentStudents.length}
-                                        indeterminate={selectedOnPageCount > 0 && selectedOnPageCount < currentStudents.length}
                                     />
                                 </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIS</th>

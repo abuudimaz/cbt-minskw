@@ -41,8 +41,32 @@ const DaftarHadir: React.FC = () => {
     };
 
     const handlePrint = () => {
+        const styleId = 'printable-page-style';
+        
+        // Remove any old style tag first to avoid conflicts
+        const oldStyle = document.getElementById(styleId);
+        if (oldStyle) {
+            oldStyle.remove();
+        }
+
+        // Create the new style tag
+        const style = document.createElement('style');
+        style.id = styleId;
+        
+        // Define the @page rule based on the selected paper size
+        const pageStyle = paperSize === 'f4' 
+            ? 'size: 21.5cm 33cm; margin: 2cm;' 
+            : 'size: A4 portrait; margin: 2cm;';
+
+        style.innerHTML = `@media print { @page { ${pageStyle} } }`;
+
+        // Add the new style to the document's head
+        document.head.appendChild(style);
+        
+        // Trigger the browser's print dialog
         window.print();
     };
+
 
     if (isLoading) {
         return <LoadingSpinner text="Memuat daftar siswa..." />;
@@ -73,7 +97,7 @@ const DaftarHadir: React.FC = () => {
             </Card>
 
             {/* --- PRINTABLE DOCUMENT --- */}
-            <div className={`printable-content bg-white p-8 shadow-lg ${paperSize === 'a4' ? 'page-a4' : 'page-f4'}`}>
+            <div className={`printable-content bg-white p-8 shadow-lg text-black`}>
                 {/* KOP SURAT */}
                 <header className="text-center border-b-4 border-black pb-2">
                     <div className="flex items-center justify-center">

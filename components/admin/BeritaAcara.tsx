@@ -33,28 +33,30 @@ const BeritaAcara: React.FC = () => {
     };
     
     const handlePrint = () => {
-        // Create a temporary stylesheet for printing
-        const style = document.createElement('style');
-        style.id = 'print-style-sheet';
+        const styleId = 'printable-page-style';
         
-        // Define the @page rule based on the selected paper size.
-        // This is a much more reliable way to set print page size.
+        // Remove any old style tag first to avoid conflicts if user changes paper size
+        const oldStyle = document.getElementById(styleId);
+        if (oldStyle) {
+            oldStyle.remove();
+        }
+
+        // Create the new style tag
+        const style = document.createElement('style');
+        style.id = styleId;
+        
+        // Define the @page rule based on the selected paper size
         const pageStyle = paperSize === 'f4' 
             ? 'size: 21.5cm 33cm; margin: 2cm;' 
             : 'size: A4 portrait; margin: 2cm;';
+            
+        style.innerHTML = `@media print { @page { ${pageStyle} } }`;
 
-        style.innerHTML = `
-            @media print {
-                @page {
-                    ${pageStyle}
-                }
-            }
-        `;
-
-        // Append the stylesheet to the head, trigger print, then remove it.
+        // Add the new style to the document's head
         document.head.appendChild(style);
+        
+        // Trigger the browser's print dialog. The style is not removed prematurely.
         window.print();
-        document.head.removeChild(style);
     };
 
     const tidakHadir = formData.totalPeserta - formData.hadir;
@@ -101,7 +103,7 @@ const BeritaAcara: React.FC = () => {
             </Card>
 
             {/* --- PRINTABLE DOCUMENT --- */}
-            <div className="printable-content bg-white p-8 shadow-lg">
+            <div className="printable-content bg-white p-8 shadow-lg text-black">
                 {/* KOP SURAT */}
                 <header className="text-center border-b-4 border-black pb-2">
                     <div className="flex items-center justify-center">
