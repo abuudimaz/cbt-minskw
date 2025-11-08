@@ -13,7 +13,6 @@ interface AuthContextType {
   updateUser: (user: User) => void;
 }
 
-// FIX: Export AuthContext to be used in hooks/useAuth.ts
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const USER_STORAGE_KEY = 'cbt_user';

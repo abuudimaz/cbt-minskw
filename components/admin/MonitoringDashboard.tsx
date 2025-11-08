@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { MonitoredStudent, StudentExamStatus } from '../../types';
 import { apiGetMonitoringData } from '../../services/api';

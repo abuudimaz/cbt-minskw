@@ -294,7 +294,6 @@ const QuestionForm: React.FC<{
     );
 };
 
-// FIX: Define QuestionManagementModalProps interface
 interface QuestionManagementModalProps {
     isOpen: boolean;
     onClose: () => void;

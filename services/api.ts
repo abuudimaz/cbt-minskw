@@ -61,40 +61,25 @@ export const apiStudentLogin = async (nis: string, password: string): Promise<Us
     const trimmedNis = nis.trim();
     const trimmedPassword = password.trim();
 
+    // Do not allow login with empty credentials
+    if (trimmedNis === '' || trimmedPassword === '') {
+        return null;
+    }
+
     const user = users.find(u => {
-        // 1. Ensure the record is for a student.
-        if (u.role !== Role.STUDENT) {
-            return false;
-        }
-
-        // 2. Validate stored credentials. They must not be null or undefined.
-        // This prevents matching against incomplete or corrupt student data.
-        if (u.nis == null || u.password == null) {
-            return false;
-        }
-        
-        // 3. Prepare stored credentials for comparison by converting to string and trimming whitespace.
-        const storedNis = String(u.nis).trim();
-        const storedPassword = String(u.password).trim();
-        
-        // 4. Disallow login with empty credentials after trimming.
-        if (trimmedNis === '' || trimmedPassword === '') {
-            return false;
-        }
-
-        // 5. Perform the actual comparison.
-        // NIS comparison is case-insensitive for better user experience.
-        const nisMatch = storedNis.toLowerCase() === trimmedNis.toLowerCase();
-        // Password comparison is case-sensitive and must be an exact match for security.
-        const passwordMatch = storedPassword === trimmedPassword;
-
-        return nisMatch && passwordMatch;
+        // A single, comprehensive check for a valid, matching student record.
+        return u.role === Role.STUDENT &&
+               u.nis != null &&
+               u.password != null &&
+               String(u.nis).trim().toLowerCase() === trimmedNis.toLowerCase() &&
+               String(u.password).trim() === trimmedPassword;
     });
 
     if (user) {
         updateMonitoringStatus(user.nis, StudentExamStatus.NOT_STARTED);
         return { id: user.nis, name: user.name, role: Role.STUDENT, nis: user.nis, class: user.class, room: user.room };
     }
+    
     return null;
 };
 

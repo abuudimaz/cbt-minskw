@@ -75,7 +75,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ exam }) => {
         if (direction === 'next' && currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         } else if (direction === 'prev' && currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+            setCurrentQuestionIndex(prev => prev + 1);
         }
     };
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Student } from '../../types';
 import Modal from '../shared/Modal';
@@ -40,11 +39,22 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({ isOpen, onClose
                 }
 
                 const parsedStudents: Student[] = json.map((row, index) => {
-                    const nis = String(row.nis);
-                    const name = String(row.name || row.nama);
-                    const studentClass = String(row.class || row.kelas);
-                    const room = String(row.room || row.ruang);
-                    const password = String(row.password);
+                    // Safely parse and normalize data from each row
+                    const nisValue = row.nis;
+                    const nis = (nisValue === null || nisValue === undefined) ? '' : String(nisValue).trim();
+                    
+                    const nameValue = row.name || row.nama;
+                    const name = (nameValue === null || nameValue === undefined) ? '' : String(nameValue).trim();
+
+                    const classValue = row.class || row.kelas;
+                    const studentClass = (classValue === null || classValue === undefined) ? '' : String(classValue).trim();
+
+                    const roomValue = row.room || row.ruang;
+                    const room = (roomValue === null || roomValue === undefined) ? '' : String(roomValue).trim();
+
+                    const passwordValue = row.password;
+                    // Do not trim password as spaces might be intentional, but handle null/undefined.
+                    const password = (passwordValue === null || passwordValue === undefined) ? '' : String(passwordValue);
 
                     if (!nis || !name || !studentClass || !room || !password) {
                         throw new Error(`Baris ${index + 2}: Data tidak lengkap. Pastikan kolom nis, name, class, room, dan password terisi.`);
@@ -74,7 +84,6 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({ isOpen, onClose
         setStudents([]);
         setError('');
         setFileName('');
-        // FIX: 'setProcessing' is not defined. It should be 'setIsProcessing'.
         setIsProcessing(false);
         onClose();
     };

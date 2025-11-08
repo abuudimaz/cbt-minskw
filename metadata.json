@@ -1,5 +1,5 @@
 {
-  "name": "Aplikasi ANBK Kloning MIN Singkawang",
+  "name": "Aplikasi ANBK MIN Singkawang",
   "description": "Aplikasi kloning Asesmen Nasional Berbasis Komputer (ANBK) untuk jenjang SD/MI, menggunakan React, TypeScript, dan Tailwind CSS dengan Google Sheets sebagai basis data. Aplikasi ini dirancang untuk simulasi ujian bagi siswa dan manajemen oleh guru/proktor.",
   "requestFramePermissions": []
 }

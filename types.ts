@@ -1,4 +1,3 @@
-// FIX: Removed self-import of 'Role' which was causing a conflict with the local enum declaration.
 export enum Role {
     STUDENT = 'student',
     ADMIN = 'admin',
