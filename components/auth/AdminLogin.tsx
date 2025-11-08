@@ -6,6 +6,7 @@ import Button from '../shared/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { apiAdminLogin } from '../../services/api';
 import { AppView } from '../../types';
+import { toastSuccess, toastError } from '../../utils/helpers';
 
 const AdminLogin: React.FC = () => {
     const { login, setCurrentView } = useAuth();
@@ -25,12 +26,14 @@ const AdminLogin: React.FC = () => {
         try {
             const user = await apiAdminLogin(username, password);
             if (user) {
+                toastSuccess('Login berhasil!');
                 login(user);
             } else {
                 setError('Username atau Password salah.');
             }
         } catch (err) {
             setError('Terjadi kesalahan. Silakan coba lagi.');
+            toastError('Gagal terhubung ke server. Periksa koneksi Anda.');
         } finally {
             setIsLoading(false);
         }

@@ -5,6 +5,7 @@ import Button from '../shared/Button';
 import Modal from '../shared/Modal';
 import { useAuth } from '../../hooks/useAuth';
 import { apiUpdateAdminProfile, apiResetAdminPassword } from '../../services/api';
+import { toastSuccess, toastError } from '../../utils/helpers';
 
 const AdminProfile: React.FC = () => {
     const { user, updateUser } = useAuth();
@@ -18,7 +19,6 @@ const AdminProfile: React.FC = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
@@ -26,7 +26,6 @@ const AdminProfile: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setSuccess('');
 
         if (password && password !== confirmPassword) {
             setError('Password baru dan konfirmasi password tidak cocok.');
@@ -46,11 +45,12 @@ const AdminProfile: React.FC = () => {
                 password || undefined
             );
             updateUser(updatedUser); // Update user in context
-            setSuccess('Profil berhasil diperbarui.');
+            toastSuccess('Profil berhasil diperbarui.');
             setPassword('');
             setConfirmPassword('');
         } catch (err) {
             setError('Gagal memperbarui profil. Silakan coba lagi.');
+            toastError('Gagal memperbarui profil. Silakan coba lagi.');
         } finally {
             setIsLoading(false);
         }
@@ -59,13 +59,12 @@ const AdminProfile: React.FC = () => {
     const handleResetPassword = async () => {
         setIsLoading(true);
         setError('');
-        setSuccess('');
         try {
             await apiResetAdminPassword(user.id);
-            setSuccess('Password admin berhasil direset ke default (`admin123`). Anda mungkin perlu login ulang.');
+            toastSuccess('Password admin berhasil direset ke default (`admin123`). Anda mungkin perlu login ulang.');
             setIsResetModalOpen(false);
         } catch (err) {
-            setError('Gagal mereset password.');
+            toastError('Gagal mereset password.');
         } finally {
             setIsLoading(false);
         }
@@ -77,7 +76,6 @@ const AdminProfile: React.FC = () => {
                 <div className="max-w-lg mx-auto">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {error && <p className="text-red-500 text-sm text-center bg-red-100 p-3 rounded-md">{error}</p>}
-                        {success && <p className="text-green-700 text-sm text-center bg-green-100 p-3 rounded-md">{success}</p>}
                         
                         <Input
                             id="username"

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ExamResult } from '../../types';
 import { apiGetExamResults } from '../../services/api';
@@ -7,6 +6,8 @@ import Card from '../shared/Card';
 import Button from '../shared/Button';
 import { downloadCSV } from '../../utils/helpers';
 import ResultDetailModal from './ResultDetailModal';
+
+const SCORE_THRESHOLD = 50; // Ambang batas untuk menyorot nilai rendah
 
 const ResultsDashboard: React.FC = () => {
     const [results, setResults] = useState<ExamResult[]>([]);
@@ -78,20 +79,30 @@ const ResultsDashboard: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {results.map((result, index) => (
-                                <tr key={result.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{result.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{result.class}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{result.examName}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">{result.score}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(result.submittedAt).toLocaleString('id-ID')}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <Button size="sm" variant="secondary" onClick={() => handleOpenDetailModal(result)}>
-                                            Detail
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {results.map((result) => {
+                                const isLowScore = result.score < SCORE_THRESHOLD;
+                                return (
+                                    <tr key={result.id} className={isLowScore ? 'bg-red-50 hover:bg-red-100 transition-colors' : ''}>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{result.name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{result.class}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{result.examName}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800">
+                                            <div className="flex items-center">
+                                                <span className={isLowScore ? 'text-red-700' : ''}>{result.score}</span>
+                                                {isLowScore && (
+                                                    <span title={`Nilai di bawah ${SCORE_THRESHOLD}`} className="ml-2 h-3 w-3 bg-red-400 rounded-full flex-shrink-0"></span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(result.submittedAt).toLocaleString('id-ID')}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <Button size="sm" variant="secondary" onClick={() => handleOpenDetailModal(result)}>
+                                                Detail
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                     {results.length === 0 && (

@@ -7,6 +7,7 @@ import Card from '../shared/Card';
 import ExamFormModal from './ExamFormModal';
 import QuestionManagementModal from './QuestionManagementModal';
 import QuestionImportModal from './QuestionImportModal';
+import { toastSuccess, toastError } from '../../utils/helpers';
 
 const ExamManagement: React.FC = () => {
     const [exams, setExams] = useState<Exam[]>([]);
@@ -57,10 +58,11 @@ const ExamManagement: React.FC = () => {
             } else {
                 await apiCreateExam(examData);
             }
+            toastSuccess('Data ujian berhasil disimpan.');
             fetchExams();
             setIsFormModalOpen(false);
         } catch (err: any) {
-            alert(`Gagal menyimpan ujian: ${err.message}`);
+            toastError(`Gagal menyimpan ujian: ${err.message}`);
         }
     };
 
@@ -68,9 +70,10 @@ const ExamManagement: React.FC = () => {
         if (window.confirm('Apakah Anda yakin ingin menghapus ujian ini? Semua soal di dalamnya juga akan terhapus.')) {
             try {
                 await apiDeleteExam(examId);
+                toastSuccess('Ujian berhasil dihapus.');
                 fetchExams();
             } catch (err) {
-                alert('Gagal menghapus ujian.');
+                toastError('Gagal menghapus ujian.');
             }
         }
     };
@@ -78,11 +81,11 @@ const ExamManagement: React.FC = () => {
     const handleImportQuestions = async (examId: string, questions: Omit<Question, 'id' | 'examId'>[]) => {
         try {
             await apiImportQuestions(examId, questions);
-            alert(`${questions.length} soal berhasil diimpor.`);
+            toastSuccess(`${questions.length} soal berhasil diimpor.`);
             fetchExams(); // To update question count
             setIsImportModalOpen(false);
         } catch (err: any) {
-            alert(`Gagal mengimpor soal: ${err.message}`);
+            toastError(`Gagal mengimpor soal: ${err.message}`);
         }
     };
 
@@ -104,7 +107,7 @@ const ExamManagement: React.FC = () => {
             const orderedExamIds = reorderedExams.map(exam => exam.id);
             await apiUpdateExamsOrder(orderedExamIds);
         } catch (err) {
-            alert('Gagal menyimpan urutan baru. Mengembalikan ke urutan sebelumnya.');
+            toastError('Gagal menyimpan urutan baru. Mengembalikan ke urutan sebelumnya.');
             // Revert on error by refetching
             fetchExams();
         }

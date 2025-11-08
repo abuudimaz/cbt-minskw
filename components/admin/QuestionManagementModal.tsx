@@ -5,7 +5,7 @@ import Modal from '../shared/Modal';
 import Button from '../shared/Button';
 import Input from '../shared/Input';
 import LoadingSpinner from '../shared/LoadingSpinner';
-import AIQuestionGeneratorModal from './AIQuestionGeneratorModal';
+import { toastSuccess, toastError } from '../../utils/helpers';
 
 const base64FromFile = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -22,7 +22,8 @@ const QuestionForm: React.FC<{
     onCancel: () => void;
 }> = ({ question, onSave, onCancel }) => {
     
-    const getInitialFormData = useCallback(() => ({
+    // This function will generate fresh IDs every time it is called.
+    const createInitialFormData = () => ({
         questionText: '',
         questionImageUrl: '',
         type: QuestionType.SINGLE_CHOICE,
@@ -30,24 +31,26 @@ const QuestionForm: React.FC<{
         matchingPrompts: [{ id: `new_prompt_${Date.now()}`, text: '' }],
         matchingAnswers: [{ id: `new_ans_${Date.now()}`, text: '' }],
         correctAnswer: undefined,
-    }), []);
+    });
 
-    const [formData, setFormData] = useState<any>(getInitialFormData());
+    const [formData, setFormData] = useState<any>(() => createInitialFormData());
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (question) {
+            const initialData = createInitialFormData();
             setFormData({
-                ...getInitialFormData(),
+                ...initialData,
                 ...question,
-                options: question.options && question.options.length > 0 ? question.options : getInitialFormData().options,
-                matchingPrompts: question.matchingPrompts && question.matchingPrompts.length > 0 ? question.matchingPrompts : getInitialFormData().matchingPrompts,
-                matchingAnswers: question.matchingAnswers && question.matchingAnswers.length > 0 ? question.matchingAnswers : getInitialFormData().matchingAnswers,
+                options: question.options && question.options.length > 0 ? question.options : initialData.options,
+                matchingPrompts: question.matchingPrompts && question.matchingPrompts.length > 0 ? question.matchingPrompts : initialData.matchingPrompts,
+                matchingAnswers: question.matchingAnswers && question.matchingAnswers.length > 0 ? question.matchingAnswers : initialData.matchingAnswers,
             });
         } else {
-            setFormData(getInitialFormData());
+            // When creating a new question, ensure it has fresh IDs
+            setFormData(createInitialFormData());
         }
-    }, [question, getInitialFormData]);
+    }, [question]);
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
@@ -67,7 +70,7 @@ const QuestionForm: React.FC<{
         }
 
         if(formData.type === QuestionType.MATCHING) {
-            if(formData.matchingPrompts.some(p => !p.text.trim()) || formData.matchingAnswers.some(a => !a.text.trim())){
+            if(formData.matchingPrompts.some((p: {text: string}) => !p.text.trim()) || formData.matchingAnswers.some((a: {text: string}) => !a.text.trim())){
                  newErrors.matching = "Semua pernyataan dan pilihan jawaban menjodohkan harus diisi.";
             }
             if(Object.keys(formData.correctAnswer || {}).length !== formData.matchingPrompts.length){
@@ -116,6 +119,30 @@ const QuestionForm: React.FC<{
 
     const addOption = () => setFormData(prev => ({ ...prev, options: [...prev.options, { id: `new_opt_${Date.now()}`, text: '' }] }));
     const removeOption = (index: number) => setFormData(prev => ({ ...prev, options: prev.options.filter((_, i) => i !== index) }));
+
+    const handleMatchingChange = (type: 'prompts' | 'answers', index: number, value: string) => {
+        const key = type === 'prompts' ? 'matchingPrompts' : 'matchingAnswers';
+        const newItems = [...formData[key]];
+        newItems[index] = { ...newItems[index], text: value };
+        setFormData(prev => ({ ...prev, [key]: newItems }));
+    };
+
+    const addMatchingItem = (type: 'prompts' | 'answers') => {
+        const key = type === 'prompts' ? 'matchingPrompts' : 'matchingAnswers';
+        const idPrefix = type === 'prompts' ? 'new_prompt_' : 'new_ans_';
+        setFormData(prev => ({ ...prev, [key]: [...prev[key], { id: `${idPrefix}${Date.now()}`, text: '' }] }));
+    };
+
+    const removeMatchingItem = (type: 'prompts' | 'answers', index: number) => {
+        const key = type === 'prompts' ? 'matchingPrompts' : 'matchingAnswers';
+        setFormData(prev => ({ ...prev, [key]: prev[key].filter((_: any, i: number) => i !== index) }));
+    };
+
+    const handleCorrectMatchingAnswerChange = (promptId: string, answerId: string) => {
+        const newCorrectAnswer = { ...(formData.correctAnswer || {}), [promptId]: answerId };
+        setFormData(prev => ({ ...prev, correctAnswer: newCorrectAnswer }));
+    };
+
     
     // --- Render Methods for Answer Types ---
 
@@ -124,7 +151,7 @@ const QuestionForm: React.FC<{
              <h4 className="font-semibold text-gray-800">Opsi Jawaban & Kunci</h4>
             {errors.options && <p className="text-sm text-red-500">{errors.options}</p>}
             {errors.correctAnswer && <p className="text-sm text-red-500">{errors.correctAnswer}</p>}
-            {formData.options.map((opt, index) => (
+            {formData.options.map((opt: any, index: number) => (
                  <div key={opt.id || index} className="p-3 border rounded-lg bg-white space-y-3">
                     <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0 h-10 flex items-center">
@@ -158,6 +185,68 @@ const QuestionForm: React.FC<{
         </div>
     );
     
+    const renderMatchingAnswerFields = () => (
+        <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Soal Menjodohkan</h4>
+            {errors.matching && <p className="text-sm text-red-500">{errors.matching}</p>}
+            {errors.correctAnswer && <p className="text-sm text-red-500">{errors.correctAnswer}</p>}
+            <div className="grid grid-cols-2 gap-6">
+                {/* Prompts Column */}
+                <div className="space-y-2">
+                    <label className="font-medium text-gray-700">Pernyataan (sisi kiri)</label>
+                    {formData.matchingPrompts.map((prompt: any, index: number) => (
+                        <div key={prompt.id || index} className="flex items-center space-x-2">
+                            <Input 
+                                value={prompt.text}
+                                onChange={(e) => handleMatchingChange('prompts', index, e.target.value)}
+                                placeholder={`Pernyataan ${index + 1}`}
+                            />
+                            <Button type="button" variant="danger" size="sm" onClick={() => removeMatchingItem('prompts', index)} disabled={formData.matchingPrompts.length <= 1}>X</Button>
+                        </div>
+                    ))}
+                    <Button type="button" variant="secondary" size="sm" onClick={() => addMatchingItem('prompts')}>+ Tambah Pernyataan</Button>
+                </div>
+                {/* Answers Column */}
+                <div className="space-y-2">
+                     <label className="font-medium text-gray-700">Pilihan Jawaban (sisi kanan)</label>
+                     {formData.matchingAnswers.map((answer: any, index: number) => (
+                        <div key={answer.id || index} className="flex items-center space-x-2">
+                            <Input 
+                                value={answer.text}
+                                onChange={(e) => handleMatchingChange('answers', index, e.target.value)}
+                                placeholder={`Jawaban ${index + 1}`}
+                            />
+                             <Button type="button" variant="danger" size="sm" onClick={() => removeMatchingItem('answers', index)} disabled={formData.matchingAnswers.length <= 1}>X</Button>
+                        </div>
+                    ))}
+                     <Button type="button" variant="secondary" size="sm" onClick={() => addMatchingItem('answers')}>+ Tambah Jawaban</Button>
+                </div>
+            </div>
+            {/* Key Mapping */}
+            <div className="pt-4 border-t mt-4">
+                 <label className="font-medium text-gray-700">Kunci Jawaban (Pasangkan)</label>
+                 <div className="space-y-2 mt-2">
+                     {formData.matchingPrompts.map((prompt: any, index: number) => (
+                        <div key={prompt.id || index} className="grid grid-cols-3 items-center gap-4">
+                            <span className="truncate p-2 bg-gray-100 rounded text-sm col-span-1" title={prompt.text}>{prompt.text || `Pernyataan ${index+1}`}</span>
+                            <span className="text-center col-span-1">&rarr;</span>
+                            <select
+                                value={formData.correctAnswer?.[prompt.id] || ''}
+                                onChange={(e) => handleCorrectMatchingAnswerChange(prompt.id, e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm col-span-1"
+                            >
+                                <option value="" disabled>-- Pilih Pasangan --</option>
+                                {formData.matchingAnswers.map((answer: any) => (
+                                    <option key={answer.id} value={answer.id}>{answer.text}</option>
+                                ))}
+                            </select>
+                        </div>
+                     ))}
+                 </div>
+            </div>
+        </div>
+    );
+
     // Simplified form structure
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -193,6 +282,7 @@ const QuestionForm: React.FC<{
             {/* Answer Fields */}
             <div className="mt-6">
                 {(formData.type === QuestionType.SINGLE_CHOICE || formData.type === QuestionType.MULTIPLE_CHOICE_COMPLEX) && renderChoiceAnswerFields()}
+                {formData.type === QuestionType.MATCHING && renderMatchingAnswerFields()}
                 {formData.type === QuestionType.SHORT_ANSWER && <Input label="Jawaban Benar" value={formData.correctAnswer || ''} onChange={e => setFormData(prev => ({...prev, correctAnswer: e.target.value}))} />}
             </div>
 
@@ -217,7 +307,6 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
 
     const fetchQuestions = useCallback(async () => {
@@ -242,28 +331,24 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
         try {
             if ('id' in questionData) await apiUpdateQuestion(questionData);
             else await apiCreateQuestion(exam.id, questionData);
+            toastSuccess('Soal berhasil disimpan.');
             handleCloseForm();
             await fetchQuestions();
             onQuestionsUpdate();
-        } catch (err: any) { alert(`Gagal menyimpan soal: ${err.message}`); }
+        } catch (err: any) { toastError(`Gagal menyimpan soal: ${err.message}`); }
     };
     
     const handleDeleteQuestion = async (questionId: string) => {
         if (window.confirm('Apakah Anda yakin ingin menghapus soal ini?')) {
             try {
                 await apiDeleteQuestion(questionId);
+                toastSuccess('Soal berhasil dihapus.');
                 await fetchQuestions();
                 onQuestionsUpdate();
-            } catch (err) { alert('Gagal menghapus soal.'); }
+            } catch (err) { toastError('Gagal menghapus soal.'); }
         }
     };
     
-    const handleAIQuestionsGenerated = async () => {
-        setIsAIGeneratorOpen(false);
-        await fetchQuestions();
-        onQuestionsUpdate();
-    }
-
     const typeColorMap: Record<QuestionType, string> = {
         [QuestionType.SINGLE_CHOICE]: 'bg-blue-100 text-blue-800',
         [QuestionType.MULTIPLE_CHOICE_COMPLEX]: 'bg-purple-100 text-purple-800',
@@ -281,9 +366,6 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
                 ) : (
                     <>
                         <div className="mb-4 flex justify-end space-x-2">
-                            <Button variant="secondary" onClick={() => setIsAIGeneratorOpen(true)}>
-                                ✨ Generate Soal AI
-                            </Button>
                             <Button onClick={() => handleOpenForm(null)}>+ Tambah Soal Manual</Button>
                         </div>
                         {isLoading && <LoadingSpinner text="Memuat soal..." />}
@@ -312,12 +394,6 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
                     </>
                 )}
             </Modal>
-            <AIQuestionGeneratorModal 
-                isOpen={isAIGeneratorOpen}
-                onClose={() => setIsAIGeneratorOpen(false)}
-                exam={exam}
-                onQuestionsGenerated={handleAIQuestionsGenerated}
-            />
         </>
     );
 };

@@ -5,6 +5,7 @@ import { apiGetExamsForStudent, apiGetResultsForStudent } from '../../services/a
 import LoadingSpinner from '../shared/LoadingSpinner';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
+import { toastError, downloadCSV } from '../../utils/helpers';
 
 const StudentDashboard: React.FC = () => {
     const { user, selectExam } = useAuth();
@@ -19,7 +20,8 @@ const StudentDashboard: React.FC = () => {
             setIsLoading(true);
             try {
                 const [examsData, resultsData] = await Promise.all([
-                    apiGetExamsForStudent(user.id),
+                    // FIX: apiGetExamsForStudent expects 0 arguments.
+                    apiGetExamsForStudent(),
                     apiGetResultsForStudent(user.id)
                 ]);
                 setExams(examsData);
@@ -40,7 +42,7 @@ const StudentDashboard: React.FC = () => {
             if (enteredToken === token) {
                 selectExam(exam);
             } else if (enteredToken !== null) {
-                alert('Token yang Anda masukkan salah.');
+                toastError('Token yang Anda masukkan salah.');
             }
         } else {
              if (window.confirm(`Anda akan memulai ujian "${exam.name}". Apakah Anda siap?`)) {
@@ -49,12 +51,32 @@ const StudentDashboard: React.FC = () => {
         }
     };
 
+    const handleExportResults = () => {
+        if (!user) return;
+        
+        const dataToExport = results.map(r => ({
+            nama_ujian: r.examName,
+            nilai: r.score,
+            tanggal_submit: new Date(r.submittedAt).toLocaleString('id-ID', {
+                year: 'numeric', month: 'long', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }),
+        }));
+
+        downloadCSV(dataToExport, `hasil_ujian_${user.name.replace(/\s+/g, '_')}.csv`);
+    };
+
     if (isLoading) return <LoadingSpinner text="Memuat daftar ujian..." />;
     if (error) return <p className="text-red-500">{error}</p>;
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">Daftar Asesmen</h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">Daftar Asesmen</h1>
+                <Button onClick={handleExportResults} disabled={results.length === 0} variant="secondary">
+                    Export Hasil
+                </Button>
+            </div>
             {exams.length > 0 ? (
                 <div className="space-y-4">
                     {exams.map(exam => {

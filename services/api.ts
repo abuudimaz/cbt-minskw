@@ -1,448 +1,442 @@
-import {
-    User,
-    Role,
-    Student,
-    Exam,
-    Question,
-    Answer,
-    MonitoredStudent,
-    StudentExamStatus,
-    ExamResult,
-    ExamSettings,
-    AssessmentType,
-    QuestionType,
-    Submission
+import { 
+    User, Role, Student, Exam, Question, Answer, ExamResult, MonitoredStudent,
+    StudentExamStatus, Submission, ExamSettings, QuestionType
 } from '../types';
 
-// --- MOCK DATABASE & HELPERS ---
+// --- MOCK DATABASE using localStorage ---
 
-const DB_KEY = 'cbt_mock_db';
+const DB = {
+    users: 'cbt_db_users',
+    exams: 'cbt_db_exams',
+    questions: 'cbt_db_questions',
+    submissions: 'cbt_db_submissions',
+    settings: 'cbt_db_settings',
+    monitoring: 'cbt_db_monitoring',
+};
 
-const defaultDB = {
-    students: [
-        { nis: '1001', name: 'Budi Santoso', class: '6A', room: '1', password: 'password123' },
-        { nis: '1002', name: 'Citra Lestari', class: '6A', room: '1', password: 'password123' },
-        { nis: '1003', name: 'Dewi Anggraini', class: '6B', room: '2', password: 'password123' },
-    ],
-    admins: [
-        { id: 'admin', name: 'Admin Proktor', role: Role.ADMIN, password: 'admin123' },
-    ],
-    exams: [
-        { id: 'exam1', name: 'Asesmen Literasi Paket 1', type: AssessmentType.LITERASI, duration: 60, questionCount: 3, token: 'TOKEN123', order: 0 },
-        { id: 'exam2', name: 'Asesmen Numerasi Paket 1', type: AssessmentType.NUMERASI, duration: 75, questionCount: 1, order: 1 },
-        { id: 'exam3', name: 'Survei Karakter', type: AssessmentType.SURVEI_KARAKTER, duration: 30, questionCount: 0, order: 2 },
-    ],
-    questions: [
-        { id: 'q1', examId: 'exam1', questionText: 'Apa ibu kota Indonesia?', type: QuestionType.SINGLE_CHOICE, options: [{id: 'q1o1', text: 'Jakarta'}, {id: 'q1o2', text: 'Bandung'}, {id: 'q1o3', text: 'Surabaya'}], correctAnswer: 'q1o1' },
-        { id: 'q2', examId: 'exam1', questionText: 'Pilih dua angka genap.', type: QuestionType.MULTIPLE_CHOICE_COMPLEX, options: [{id: 'q2o1', text: '2'}, {id: 'q2o2', text: '3'}, {id: 'q2o3', text: '4'}], correctAnswer: ['q2o1', 'q2o3'] },
-        { id: 'q2_essay', examId: 'exam1', questionText: 'Jelaskan secara singkat mengapa penting untuk menjaga kebersihan lingkungan.', type: QuestionType.ESSAY },
-        { id: 'q3', examId: 'exam2', questionText: '2 + 2 = ?', type: QuestionType.SHORT_ANSWER, correctAnswer: '4' },
-    ],
-    results: [],
-    submissions: [],
-    studentStatuses: {}, // { nis: { examId: string, status: StudentExamStatus } }
-    settings: {
-        assessmentTitle: 'ASESMEN MADRASAH BERBASIS KOMPUTER (AMBK)',
-        defaultDuration: 90,
-        questionDisplay: 'single',
-        allowNavigateBack: true,
-        requireToken: false,
-        academicYear: '2023/2024',
-        proctorName: 'MAHFUD SIDIK',
-        headmasterName: 'MUSLIMAH, S.Pd.I',
-        headmasterNip: '197202162000032001',
+const initDB = () => {
+    if (!localStorage.getItem(DB.users)) {
+        localStorage.setItem(DB.users, JSON.stringify([
+            { id: 'admin', name: 'Admin Proktor', role: Role.ADMIN, password: 'admin123' },
+            { id: '1234', nis: '1234', name: 'Budi Santoso', class: 'VI A', room: 'RUANG 1', role: Role.STUDENT, password: '1234' },
+        ]));
+    }
+    if (!localStorage.getItem(DB.exams)) {
+        localStorage.setItem(DB.exams, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(DB.questions)) {
+        localStorage.setItem(DB.questions, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(DB.submissions)) {
+        localStorage.setItem(DB.submissions, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(DB.settings)) {
+         localStorage.setItem(DB.settings, JSON.stringify({
+            assessmentTitle: 'ASESMEN MADRASAH (AM) BERBASIS KOMPUTER',
+            academicYear: '2023/2024',
+            proctorName: 'Nama Proktor',
+            headmasterName: 'Nama Kepala Sekolah, S.Pd.',
+            headmasterNip: '19... .... ....',
+            questionDisplay: 'single',
+         }));
+    }
+     if (!localStorage.getItem(DB.monitoring)) {
+        localStorage.setItem(DB.monitoring, JSON.stringify([]));
     }
 };
 
-const getDb = () => {
-    try {
-        const dbString = localStorage.getItem(DB_KEY);
-        if (dbString) {
-            const db = JSON.parse(dbString);
-            // Ensure all keys from defaultDB exist to handle migrations
-            return { ...defaultDB, ...db, settings: {...defaultDB.settings, ...db.settings} };
-        }
-        localStorage.setItem(DB_KEY, JSON.stringify(defaultDB));
-        return defaultDB;
-    } catch (e) {
-        console.error("Failed to access localStorage DB", e);
-        return defaultDB;
-    }
-};
+initDB();
 
-const saveDb = (db: any) => {
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-};
-
+const get = <T>(key: string): T[] => JSON.parse(localStorage.getItem(key) || '[]');
+const getOne = <T>(key: string): T | null => JSON.parse(localStorage.getItem(key) || 'null');
+const set = (key: string, data: any) => localStorage.setItem(key, JSON.stringify(data));
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 
-// --- API FUNCTIONS ---
-
-// Auth
+// --- AUTH ---
 export const apiStudentLogin = async (nis: string, password: string): Promise<User | null> => {
     await delay(500);
-    const db = getDb();
-    const student = db.students.find((s: Student) => s.nis === nis && s.password === password);
-    if (student) {
-        return {
-            id: student.nis,
-            name: student.name,
-            role: Role.STUDENT,
-            class: student.class,
-            room: student.room,
-        };
+    const users = get<any>(DB.users);
+
+    const trimmedNis = nis.trim();
+    const trimmedPassword = password.trim();
+
+    const user = users.find(u => {
+        if (u.role !== Role.STUDENT) {
+            return false;
+        }
+
+        const storedNis = String(u.nis || '').trim();
+        const storedPassword = String(u.password || '').trim();
+
+        // Perbandingan NIS yang tidak case-sensitive lebih user-friendly.
+        // Ini memperlakukan NIS sebagai string ID yang unik.
+        const nisMatch = storedNis.toLowerCase() === trimmedNis.toLowerCase();
+
+        // Perbandingan password HARUS berupa pencocokan string yang eksak dan case-sensitive untuk keamanan.
+        // Ini mencegah masalah di mana '0123' dan '123' diperlakukan sebagai password yang sama.
+        const passwordMatch = storedPassword === trimmedPassword;
+
+        return nisMatch && passwordMatch;
+    });
+
+    if (user) {
+        updateMonitoringStatus(user.nis, StudentExamStatus.NOT_STARTED);
+        return { id: user.nis, name: user.name, role: Role.STUDENT, nis: user.nis, class: user.class, room: user.room };
     }
     return null;
 };
 
 export const apiAdminLogin = async (username: string, password: string): Promise<User | null> => {
     await delay(500);
-    const db = getDb();
-    const admin = db.admins.find((a: any) => a.id === username && a.password === password);
-    return admin ? { ...admin } : null;
+    const users = get<any>(DB.users);
+    const user = users.find(u => u.role === Role.ADMIN && u.id === username && u.password === password);
+    if (user) return { id: user.id, name: user.name, role: Role.ADMIN };
+    return null;
 };
 
-// Students
+// --- STUDENTS ---
 export const apiGetStudents = async (): Promise<Student[]> => {
-    await delay(500);
-    const db = getDb();
-    return [...db.students];
+    await delay(300);
+    const users = get<any>(DB.users);
+    return users.filter(u => u.role === Role.STUDENT).map(({password, ...student}) => student);
 };
 
-export const apiCreateStudent = async (studentData: Omit<Student, 'nis'> & { nis: string }): Promise<Student> => {
-    await delay(500);
-    const db = getDb();
-    if (db.students.some((s: Student) => s.nis === studentData.nis)) {
-        throw new Error('NIS sudah ada.');
-    }
-    const newStudent = { ...studentData };
-    db.students.push(newStudent);
-    saveDb(db);
-    return newStudent;
+export const apiCreateStudent = async (studentData: Student): Promise<Student> => {
+    await delay(300);
+    const users = get<any>(DB.users);
+    if (users.some(u => u.nis === studentData.nis)) throw new Error("NIS sudah ada.");
+    users.push({ ...studentData, id: studentData.nis, role: Role.STUDENT });
+    set(DB.users, users);
+    return studentData;
 };
 
 export const apiUpdateStudent = async (studentData: Student): Promise<Student> => {
-    await delay(500);
-    const db = getDb();
-    const index = db.students.findIndex((s: Student) => s.nis === studentData.nis);
-    if (index === -1) {
-        throw new Error('Siswa tidak ditemukan.');
-    }
-    db.students[index] = { ...db.students[index], ...studentData };
-    saveDb(db);
-    return db.students[index];
+    await delay(300);
+    let users = get<any>(DB.users);
+    users = users.map(u => {
+        if (u.nis === studentData.nis) {
+            const updatedUser = { ...u, name: studentData.name, class: studentData.class, room: studentData.room };
+            if (studentData.password) {
+                updatedUser.password = studentData.password;
+            }
+            return updatedUser;
+        }
+        return u;
+    });
+    set(DB.users, users);
+    return studentData;
 };
 
 export const apiDeleteStudent = async (nis: string): Promise<void> => {
-    await delay(500);
-    const db = getDb();
-    db.students = db.students.filter((s: Student) => s.nis !== nis);
-    saveDb(db);
+    await delay(300);
+    let users = get<any>(DB.users);
+    users = users.filter(u => u.nis !== nis);
+    set(DB.users, users);
 };
 
-export const apiImportStudents = async (students: Student[]): Promise<{ added: number, skipped: number }> => {
+export const apiImportStudents = async (importedStudents: Student[]): Promise<{ added: number, skipped: number }> => {
     await delay(1000);
-    const db = getDb();
-    const existingNis = new Set(db.students.map((s: Student) => s.nis));
+    const users = get<any>(DB.users);
+    const existingNis = new Set(users.map(u => u.nis));
+    let added = 0, skipped = 0;
     
-    let added = 0;
-    let skipped = 0;
-
-    students.forEach(student => {
-        if (!existingNis.has(student.nis)) {
-            db.students.push(student);
-            existingNis.add(student.nis);
-            added++;
-        } else {
+    importedStudents.forEach(s => {
+        if(existingNis.has(s.nis)) {
             skipped++;
+        } else {
+            users.push({ ...s, id: s.nis, role: Role.STUDENT });
+            added++;
         }
     });
 
-    saveDb(db);
+    set(DB.users, users);
     return { added, skipped };
 };
 
-// Exams
+// --- EXAMS ---
 export const apiGetExams = async (): Promise<Exam[]> => {
-    await delay(500);
-    const db = getDb();
-    return [...db.exams].sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
+    await delay(300);
+    const exams = get<Exam>(DB.exams);
+    const questions = get<Question>(DB.questions);
+    return exams.map(exam => ({
+        ...exam,
+        questionCount: questions.filter(q => q.examId === exam.id).length
+    }));
 };
+export const apiGetExamsForStudent = apiGetExams;
 
 export const apiCreateExam = async (examData: Omit<Exam, 'id' | 'questionCount'>): Promise<Exam> => {
-    await delay(500);
-    const db = getDb();
-    const newExam: Exam = {
-        ...examData,
-        id: `exam_${Date.now()}`,
-        questionCount: 0,
-        order: db.exams.length,
-    };
-    db.exams.push(newExam);
-    saveDb(db);
+    await delay(300);
+    const exams = get<Exam>(DB.exams);
+    const newExam = { ...examData, id: `exam_${Date.now()}`, questionCount: 0 };
+    exams.push(newExam);
+    set(DB.exams, exams);
     return newExam;
 };
 
 export const apiUpdateExam = async (examData: Exam): Promise<Exam> => {
-    await delay(500);
-    const db = getDb();
-    const index = db.exams.findIndex((e: Exam) => e.id === examData.id);
-    if (index === -1) throw new Error('Ujian tidak ditemukan.');
-    db.exams[index] = { ...db.exams[index], ...examData };
-    saveDb(db);
-    return db.exams[index];
+    await delay(300);
+    let exams = get<Exam>(DB.exams);
+    exams = exams.map(e => (e.id === examData.id ? { ...e, ...examData } : e));
+    set(DB.exams, exams);
+    return examData;
 };
 
 export const apiDeleteExam = async (examId: string): Promise<void> => {
-    await delay(500);
-    const db = getDb();
-    db.exams = db.exams.filter((e: Exam) => e.id !== examId);
-    db.questions = db.questions.filter((q: Question) => q.examId !== examId);
-    saveDb(db);
+    await delay(300);
+    let exams = get<Exam>(DB.exams);
+    exams = exams.filter(e => e.id !== examId);
+    set(DB.exams, exams);
+    // Also delete questions
+    let questions = get<Question>(DB.questions);
+    questions = questions.filter(q => q.examId !== examId);
+    set(DB.questions, questions);
 };
 
 export const apiUpdateExamsOrder = async (orderedExamIds: string[]): Promise<void> => {
-    await delay(300);
-    const db = getDb();
-    db.exams.forEach((exam: Exam) => {
-        const newOrder = orderedExamIds.indexOf(exam.id);
-        exam.order = newOrder !== -1 ? newOrder : exam.order;
-    });
-    saveDb(db);
+    await delay(200);
+    const exams = get<Exam>(DB.exams);
+    const orderedExams = orderedExamIds.map(id => exams.find(e => e.id === id)).filter(Boolean) as Exam[];
+    set(DB.exams, orderedExams);
 };
 
 
-// Questions
-const updateQuestionCount = (examId: string) => {
-    const db = getDb();
-    const count = db.questions.filter((q: Question) => q.examId === examId).length;
-    const exam = db.exams.find((e: Exam) => e.id === examId);
-    if (exam) {
-        exam.questionCount = count;
-        saveDb(db);
-    }
-};
-
+// --- QUESTIONS ---
 export const apiGetQuestionsForExam = async (examId: string): Promise<Question[]> => {
-    await delay(700);
-    const db = getDb();
-    return db.questions.filter((q: Question) => q.examId === examId);
+    await delay(500);
+    const questions = get<Question>(DB.questions);
+    return questions.filter(q => q.examId === examId);
 };
 
 export const apiCreateQuestion = async (examId: string, questionData: Omit<Question, 'id' | 'examId'>): Promise<Question> => {
-    await delay(500);
-    const db = getDb();
-    const newQuestion: Question = {
-        ...questionData,
-        id: `q_${Date.now()}`,
-        examId,
-    };
-    db.questions.push(newQuestion);
-    updateQuestionCount(examId);
-    saveDb(db);
+    await delay(300);
+    const questions = get<Question>(DB.questions);
+    const newQuestion = { ...questionData, id: `q_${Date.now()}`, examId };
+    questions.push(newQuestion);
+    set(DB.questions, questions);
     return newQuestion;
 };
 
 export const apiUpdateQuestion = async (questionData: Question): Promise<Question> => {
-    await delay(500);
-    const db = getDb();
-    const index = db.questions.findIndex((q: Question) => q.id === questionData.id);
-    if (index === -1) throw new Error('Soal tidak ditemukan.');
-    db.questions[index] = { ...db.questions[index], ...questionData };
-    saveDb(db);
-    return db.questions[index];
+    await delay(300);
+    let questions = get<Question>(DB.questions);
+    questions = questions.map(q => q.id === questionData.id ? questionData : q);
+    set(DB.questions, questions);
+    return questionData;
 };
 
 export const apiDeleteQuestion = async (questionId: string): Promise<void> => {
-    await delay(500);
-    const db = getDb();
-    const question = db.questions.find((q: Question) => q.id === questionId);
-    if (question) {
-        db.questions = db.questions.filter((q: Question) => q.id !== questionId);
-        updateQuestionCount(question.examId);
-        saveDb(db);
-    }
+    await delay(300);
+    let questions = get<Question>(DB.questions);
+    questions = questions.filter(q => q.id !== questionId);
+    set(DB.questions, questions);
 };
 
-export const apiImportQuestions = async (examId: string, questions: Omit<Question, 'id' | 'examId'>[]): Promise<void> => {
+export const apiImportQuestions = async (examId: string, importedQuestions: Omit<Question, 'id' | 'examId'>[]): Promise<void> => {
     await delay(1000);
-    const db = getDb();
-    const newQuestions: Question[] = questions.map(q => ({
+    const questions = get<Question>(DB.questions);
+    const newQuestions = importedQuestions.map(q => ({
         ...q,
         id: `q_${Date.now()}_${Math.random()}`,
         examId,
+        // Make sure options have IDs if they are choice-based
+        options: (q.type === QuestionType.SINGLE_CHOICE || q.type === QuestionType.MULTIPLE_CHOICE_COMPLEX) 
+            ? q.options?.map((opt, i) => ({ ...opt, id: opt.id || `opt${i+1}` })) 
+            : q.options,
     }));
-    db.questions.push(...newQuestions);
-    updateQuestionCount(examId);
-    saveDb(db);
+    set(DB.questions, [...questions, ...newQuestions]);
 };
 
-// Student Experience
-export const apiGetExamsForStudent = async (studentId: string): Promise<Exam[]> => {
-    return apiGetExams(); // For now, all students see all exams
+
+// --- SUBMISSIONS & RESULTS ---
+const calculateScore = (questions: Question[], answers: Answer[]): number => {
+    let correct = 0;
+    const choiceQuestions = questions.filter(q => q.type === QuestionType.SINGLE_CHOICE || q.type === QuestionType.MULTIPLE_CHOICE_COMPLEX || q.type === QuestionType.SHORT_ANSWER);
+    if(choiceQuestions.length === 0) return 100; // if no questions to grade, give 100.
+
+    answers.forEach(ans => {
+        const question = questions.find(q => q.id === ans.questionId);
+        if (question && question.correctAnswer) {
+            if(JSON.stringify(ans.value) === JSON.stringify(question.correctAnswer)) {
+                correct++;
+            }
+        }
+    });
+
+    return Math.round((correct / choiceQuestions.length) * 100);
+}
+
+export const apiSubmitAnswers = async (studentId: string, examId: string, answers: Answer[]): Promise<Submission> => {
+    await delay(1000);
+    updateMonitoringStatus(studentId, StudentExamStatus.FINISHED);
+    const submissions = get<Submission>(DB.submissions);
+    const questions = await apiGetQuestionsForExam(examId);
+    const score = calculateScore(questions, answers);
+
+    const newSubmission: Submission = {
+        id: `sub_${studentId}_${examId}`,
+        studentId, examId, answers,
+        submittedAt: new Date().toISOString(),
+        score,
+    };
+    
+    // Avoid duplicate submissions
+    const existingIndex = submissions.findIndex(s => s.id === newSubmission.id);
+    if(existingIndex > -1) {
+        submissions[existingIndex] = newSubmission;
+    } else {
+        submissions.push(newSubmission);
+    }
+    set(DB.submissions, submissions);
+    return newSubmission;
 };
 
 export const apiGetResultsForStudent = async (studentId: string): Promise<ExamResult[]> => {
-    await delay(500);
-    const db = getDb();
-    return db.results.filter((r: ExamResult) => r.nis === studentId);
-};
-
-const calculateScore = (questions: Question[], answers: Answer[]): number => {
-    let correct = 0;
-    const scorableQuestions = questions.filter(q => q.type !== QuestionType.ESSAY && q.type !== QuestionType.SURVEY);
-
-    if (scorableQuestions.length === 0) return 100; // or 0, depending on policy
-
-    answers.forEach(answer => {
-        const question = questions.find(q => q.id === answer.questionId);
-        if (!question || !question.correctAnswer) return;
-
-        let isCorrect = false;
-        switch (question.type) {
-            case QuestionType.SINGLE_CHOICE:
-            case QuestionType.SHORT_ANSWER:
-                isCorrect = String(answer.value).toLowerCase() === String(question.correctAnswer).toLowerCase();
-                break;
-            case QuestionType.MULTIPLE_CHOICE_COMPLEX:
-                const correctIds = (question.correctAnswer as string[]).sort();
-                const studentIds = (answer.value as string[] || []).sort();
-                isCorrect = JSON.stringify(correctIds) === JSON.stringify(studentIds);
-                break;
-            case QuestionType.MATCHING:
-                 const correctMatching = question.correctAnswer as Record<string, string>;
-                 const studentMatching = answer.value as Record<string, string>;
-                 isCorrect = Object.keys(correctMatching).length > 0 && 
-                             Object.keys(correctMatching).every(key => correctMatching[key] === studentMatching[key]);
-                 break;
-        }
-        if (isCorrect) correct++;
-    });
-
-    return Math.round((correct / scorableQuestions.length) * 100);
-};
-
-export const apiSubmitAnswers = async (studentId: string, examId: string, answers: Answer[]): Promise<void> => {
-    await delay(1000);
-    const db = getDb();
-    const student = db.students.find((s: Student) => s.nis === studentId);
-    const exam = db.exams.find((e: Exam) => e.id === examId);
-    if (!student || !exam) throw new Error("Data siswa atau ujian tidak valid.");
-
-    const submissionId = `sub_${student.nis}_${exam.id}_${Date.now()}`;
-    const newSubmission: Submission = {
-        id: submissionId,
-        nis: student.nis,
-        examId: exam.id,
-        answers: answers,
-        submittedAt: new Date(),
-    };
-    db.submissions.push(newSubmission);
-
-    const questions = db.questions.filter((q: Question) => q.examId === examId);
-    const score = calculateScore(questions, answers);
-
-    const newResult: ExamResult = {
-        id: `res_${submissionId}`,
-        nis: student.nis,
-        name: student.name,
-        class: student.class,
-        examId: exam.id,
-        examName: exam.name,
-        score,
-        submittedAt: new Date(),
-    };
-
-    // Remove previous result for the same student and exam to prevent duplicates
-    db.results = db.results.filter((r: ExamResult) => !(r.nis === student.nis && r.examId === exam.id));
-    db.results.push(newResult);
-
-    saveDb(db);
-};
-
-export const apiGetSubmission = async (nis: string, examId: string): Promise<Submission | null> => {
-    await delay(500);
-    const db = getDb();
-    // Find the latest submission for that student and exam
-    const submission = [...db.submissions]
-        .reverse()
-        .find((s: Submission) => s.nis === nis && s.examId === examId);
-    return submission || null;
-};
-
-
-// Admin Dashboard
-export const apiGetMonitoringData = async (): Promise<MonitoredStudent[]> => {
     await delay(300);
-    // This is a simplified mock. A real implementation would track login/exam start/finish events.
-    const db = getDb();
-    const resultsByNis = new Map(db.results.map((r: ExamResult) => [`${r.nis}-${r.examId}`, r]));
-    
-    return db.students.map((s: Student) => {
-        // A simple logic: if any result exists, they are finished. Otherwise, not started.
-        const hasAnyResult = db.results.some((r: ExamResult) => r.nis === s.nis);
+    const submissions = get<Submission>(DB.submissions).filter(s => s.studentId === studentId);
+    const exams = get<Exam>(DB.exams);
+    const student = (get<any>(DB.users)).find(u => u.nis === studentId);
+
+    return submissions.map(sub => {
+        const exam = exams.find(e => e.id === sub.examId);
         return {
-            nis: s.nis,
-            name: s.name,
-            class: s.class,
-            status: hasAnyResult ? StudentExamStatus.FINISHED : StudentExamStatus.NOT_STARTED,
+            id: sub.id,
+            nis: sub.studentId,
+            name: student?.name || '',
+            class: student?.class || '',
+            examId: sub.examId,
+            examName: exam?.name || 'Unknown Exam',
+            score: sub.score ?? 0,
+            submittedAt: sub.submittedAt
         };
     });
 };
 
 export const apiGetExamResults = async (): Promise<ExamResult[]> => {
     await delay(800);
-    const db = getDb();
-    return [...db.results];
+    const submissions = get<Submission>(DB.submissions);
+    const exams = get<Exam>(DB.exams);
+    const students = await apiGetStudents();
+
+    const results = submissions.map(sub => {
+        const student = students.find(s => s.nis === sub.studentId);
+        const exam = exams.find(e => e.id === sub.examId);
+
+        return {
+            id: sub.id,
+            nis: sub.studentId,
+            name: student?.name || 'Unknown Student',
+            class: student?.class || '-',
+            examId: sub.examId,
+            examName: exam?.name || 'Unknown Exam',
+            score: sub.score ?? 0,
+            submittedAt: sub.submittedAt
+        };
+    });
+    return results.sort((a,b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
 };
 
-export const apiUpdateExamResult = async (resultId: string, newScore: number): Promise<ExamResult> => {
+export const apiGetSubmission = async (studentNis: string, examId: string): Promise<Submission | null> => {
+    await delay(400);
+    const submissions = get<Submission>(DB.submissions);
+    return submissions.find(s => s.studentId === studentNis && s.examId === examId) || null;
+};
+
+export const apiUpdateExamResult = async(resultId: string, score: number): Promise<void> => {
     await delay(500);
-    const db = getDb();
-    const result = db.results.find((r: ExamResult) => r.id === resultId);
-    if (!result) throw new Error('Hasil ujian tidak ditemukan.');
-    result.score = newScore;
-    saveDb(db);
-    return { ...result };
+    let submissions = get<Submission>(DB.submissions);
+    const submissionIndex = submissions.findIndex(s => s.id === resultId);
+    if (submissionIndex > -1) {
+        submissions[submissionIndex].score = score;
+        set(DB.submissions, submissions);
+    } else {
+        throw new Error("Submission not found");
+    }
 };
 
 
+// --- MONITORING ---
+const updateMonitoringStatus = (nis: string, status: StudentExamStatus) => {
+    let monitoringData = get<MonitoredStudent>(DB.monitoring);
+    const studentIndex = monitoringData.findIndex(s => s.nis === nis);
+    if(studentIndex > -1) {
+        monitoringData[studentIndex].status = status;
+    } else {
+         const users = get<any>(DB.users);
+         const studentInfo = users.find(u => u.nis === nis);
+         if(studentInfo) {
+             monitoringData.push({
+                 nis,
+                 name: studentInfo.name,
+                 class: studentInfo.class,
+                 status
+             });
+         }
+    }
+    set(DB.monitoring, monitoringData);
+};
+
+export const apiGetMonitoringData = async (): Promise<MonitoredStudent[]> => {
+    await delay(200);
+    const students = await apiGetStudents();
+    let monitoringData = get<MonitoredStudent>(DB.monitoring);
+    
+    // Add any missing students to monitoring data with status NOT_STARTED
+    students.forEach(s => {
+        if (!monitoringData.some(m => m.nis === s.nis)) {
+            monitoringData.push({
+                nis: s.nis,
+                name: s.name,
+                class: s.class,
+                status: StudentExamStatus.NOT_STARTED,
+            });
+        }
+    });
+
+    set(DB.monitoring, monitoringData);
+    return monitoringData;
+};
+
+
+// --- ADMIN & SETTINGS ---
 export const apiUpdateAdminProfile = async (adminId: string, name: string, password?: string): Promise<User> => {
     await delay(500);
-    const db = getDb();
-    const admin = db.admins.find((a: any) => a.id === adminId);
-    if (!admin) throw new Error('Admin tidak ditemukan.');
-    
-    admin.name = name;
-    if (password) {
-        admin.password = password;
-    }
-    saveDb(db);
-    return { ...admin };
+    let users = get<any>(DB.users);
+    let updatedUser: User | null = null;
+    users = users.map(u => {
+        if(u.id === adminId && u.role === Role.ADMIN) {
+            const newUser = { ...u, name };
+            if(password) newUser.password = password;
+            updatedUser = newUser;
+            return newUser;
+        }
+        return u;
+    });
+    set(DB.users, users);
+    if(!updatedUser) throw new Error("Admin not found");
+    return { id: updatedUser.id, name: updatedUser.name, role: updatedUser.role };
 };
 
 export const apiResetAdminPassword = async (adminId: string): Promise<void> => {
     await delay(500);
-    const db = getDb();
-    const admin = db.admins.find((a: any) => a.id === adminId);
-    if (!admin) throw new Error('Admin tidak ditemukan.');
-    admin.password = 'admin123';
-    saveDb(db);
+    let users = get<any>(DB.users);
+    users = users.map(u => {
+        if(u.id === adminId && u.role === Role.ADMIN) {
+            return { ...u, password: 'admin123' };
+        }
+        return u;
+    });
+    set(DB.users, users);
 };
 
-
-// Settings
 export const apiGetExamSettings = async (): Promise<ExamSettings> => {
-    await delay(300);
-    const db = getDb();
-    return db.settings;
+    await delay(200);
+    return getOne<ExamSettings>(DB.settings) as ExamSettings;
 };
 
-export const apiSaveExamSettings = async (settings: ExamSettings): Promise<ExamSettings> => {
-    await delay(500);
-    const db = getDb();
-    db.settings = settings;
-    saveDb(db);
+export const apiUpdateExamSettings = async (settings: ExamSettings): Promise<ExamSettings> => {
+    await delay(400);
+    set(DB.settings, settings);
     return settings;
 };

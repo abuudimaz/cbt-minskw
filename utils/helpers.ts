@@ -1,3 +1,4 @@
+import { toast, ToastOptions } from 'react-toastify';
 
 export const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
@@ -7,7 +8,7 @@ export const formatTime = (seconds: number): string => {
 
 export const downloadCSV = (data: any[], filename: string = 'export.csv') => {
     if (data.length === 0) {
-        alert("Tidak ada data untuk diekspor.");
+        toastError("Tidak ada data untuk diekspor.");
         return;
     }
 
@@ -32,4 +33,29 @@ export const downloadCSV = (data: any[], filename: string = 'export.csv') => {
         link.click();
         document.body.removeChild(link);
     }
+};
+
+// --- Toast Notification Service ---
+
+const defaultToastOptions: ToastOptions = {
+    position: "top-right",
+    autoClose: 3000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+    theme: "light",
+};
+
+export const toastSuccess = (message: string) => {
+    toast.success(message, defaultToastOptions);
+};
+
+export const toastError = (message: string) => {
+    toast.error(message, defaultToastOptions);
+};
+
+export const toastInfo = (message: string) => {
+    toast.info(message, defaultToastOptions);
 };

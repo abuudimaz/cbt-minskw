@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/react-toastify@10.0.5/dist/ReactToastify.css" />
+    
     <!-- Tailwind CSS JIT CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -33,73 +36,22 @@
     <!-- SheetJS for Excel Import -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- Import Map for React & GenAI -->
+    <!-- Import Map for React and other libraries -->
     <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@18.2.0",
     "react-dom": "https://esm.sh/react-dom@18.2.0",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "lodash-es": "https://aistudiocdn.com/lodash-es@^4.17.21",
-    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
-    "react/": "https://esm.sh/react@18.2.0/",
-    "@google/genai": "https://esm.sh/@google/generative-ai"
+    "react-toastify": "https://esm.sh/react-toastify@10.0.5",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
   }
 }
 </script>
-    
-    <style>
-      body {
-        font-family: 'Poppins', sans-serif;
-      }
-      .font-amiri {
-        font-family: 'Amiri', serif;
-      }
-      /* Print-specific styles - DEFINITIVE FIX */
-      @media print {
-        /* Hide all non-essential elements flagged with .no-print */
-        .no-print {
-          display: none !important;
-        }
 
-        /* Ensure browser renders background colors/images */
-        body {
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        
-        /* --- "Isolate and Print" Strategy --- */
-        
-        /* 1. Hide everything on the page by default */
-        body * {
-           visibility: hidden;
-        }
-        
-        /* 2. Make ONLY the printable content and all its children visible again */
-        .printable-content, .printable-content * {
-           visibility: visible;
-           /* DEFINITIVE FIX: Force text and background colors to prevent blank/unreadable prints. */
-           color: black !important;
-           background: white !important;
-        }
-        
-        /* 3. Position the printable content at the top-left of the page, taking up the full width. */
-        .printable-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-            font-family: 'Times New Roman', Times, serif;
-        }
-      }
-    </style>
 </head>
-<body class="bg-gray-50">
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+<body class="bg-gray-100">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 </body>

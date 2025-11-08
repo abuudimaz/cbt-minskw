@@ -7,6 +7,7 @@ import Button from '../shared/Button';
 import { formatTime } from '../../utils/helpers';
 import QuestionViewer from './QuestionViewer';
 import ExamSummary from './ExamSummary';
+import { toastError } from '../../utils/helpers';
 
 interface ExamInterfaceProps {
     exam: Exam;
@@ -33,7 +34,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ exam }) => {
             await apiSubmitAnswers(user.id, exam.id, finalAnswers);
             setIsFinished(true);
         } catch (error) {
-            alert("Gagal mengirim jawaban. Silakan coba lagi.");
+            toastError("Gagal mengirim jawaban. Silakan coba lagi.");
         } finally {
             setIsSubmitting(false);
         }

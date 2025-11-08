@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Student } from '../../types';
 import Modal from '../shared/Modal';
@@ -60,8 +61,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
             return;
         }
 
-        // FIX: The Student type requires a 'password' property.
-        // The object is now created with the password property included.
         const studentData: Student = {
             nis: formData.nis,
             name: formData.name,
@@ -69,12 +68,6 @@ const StudentFormModal: React.FC<StudentFormModalProps> = ({ isOpen, onClose, on
             room: formData.room,
             password: formData.password,
         };
-
-        // Only include password if it's being set or changed
-        if (isEditing && !formData.password) {
-            // Keep existing password if field is blank during edit
-            studentData.password = student.password;
-        }
 
         onSave(studentData);
     };

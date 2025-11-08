@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ExamResult, Submission, Question, QuestionType, Answer } from '../../types';
 import { apiGetSubmission, apiGetQuestionsForExam, apiUpdateExamResult } from '../../services/api';
-import { GoogleGenerativeAI } from "@google/genai";
 import Modal from '../shared/Modal';
 import Button from '../shared/Button';
 import Input from '../shared/Input';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import { toastSuccess, toastError } from '../../utils/helpers';
 
 interface ResultDetailModalProps {
     isOpen: boolean;
@@ -14,24 +14,11 @@ interface ResultDetailModalProps {
     onScoreUpdate: () => void;
 }
 
-const API_KEY = process.env.API_KEY;
-if (!API_KEY) {
-    console.error("API_KEY is not set in environment variables.");
-}
-const ai = new GoogleGenerativeAI({ apiKey: API_KEY! });
-
-type AIGrade = {
-    score: number;
-    feedback: string;
-    isLoading: boolean;
-};
-
 const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, result, onScoreUpdate }) => {
     const [submission, setSubmission] = useState<Submission | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [aiGrades, setAIGrades] = useState<Map<string, AIGrade>>(new Map());
     const [finalScore, setFinalScore] = useState<number>(result.score);
 
     useEffect(() => {
@@ -59,48 +46,15 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
             fetchData();
         }
     }, [isOpen, result]);
-
-    const handleGradeEssay = async (question: Question, answer: Answer) => {
-        const questionId = question.id;
-        setAIGrades(prev => new Map(prev).set(questionId, { score: 0, feedback: '', isLoading: true }));
-
-        const prompt = `Anda adalah seorang guru yang memeriksa jawaban esai siswa. Berikan penilaian untuk jawaban siswa berdasarkan pertanyaan yang diberikan.
-        
-        Pertanyaan: "${question.questionText}"
-        Jawaban Siswa: "${answer.value}"
-
-        Beri nilai dari 0 hingga 100 dan berikan umpan balik singkat (maksimal 2 kalimat) sebagai justifikasi. Respons harus dalam format JSON.`;
-
-        try {
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            score: { type: "NUMBER" },
-                            feedback: { type: "STRING" },
-                        }
-                    }
-                }
-            });
-            const grade = JSON.parse(response.text);
-            setAIGrades(prev => new Map(prev).set(questionId, { ...grade, isLoading: false }));
-        } catch (err) {
-            console.error(err);
-            setAIGrades(prev => new Map(prev).set(questionId, { score: 0, feedback: 'Gagal menilai.', isLoading: false }));
-        }
-    };
     
     const handleSaveFinalScore = async () => {
         setIsLoading(true);
         try {
             await apiUpdateExamResult(result.id, finalScore);
+            toastSuccess('Nilai akhir berhasil disimpan.');
             onScoreUpdate();
         } catch(err) {
-            alert('Gagal menyimpan nilai akhir.');
+            toastError('Gagal menyimpan nilai akhir.');
         } finally {
             setIsLoading(false);
         }
@@ -110,39 +64,62 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
         return submission?.answers.find(a => a.questionId === questionId);
     };
 
-    const renderAnswer = (question: Question) => {
-        const answer = findAnswer(question.id);
-        if (!answer) return <p className="text-gray-500 italic">Tidak dijawab</p>;
+    const renderAnswer = (question: Question, answer: Answer | undefined) => {
+        const value = answer?.value;
 
-        const aiGrade = aiGrades.get(question.id);
-
-        if (question.type === QuestionType.ESSAY) {
-            return (
-                <div>
-                    <p className="p-2 bg-gray-50 border rounded-md">{answer.value}</p>
-                    <div className="mt-2">
-                        <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleGradeEssay(question, answer)}
-                            isLoading={aiGrade?.isLoading}
-                            disabled={aiGrade?.isLoading}
-                        >
-                            ✨ Nilai dengan AI
-                        </Button>
-                        {aiGrade && !aiGrade.isLoading && (
-                            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md text-sm">
-                                <p><strong>Saran Nilai AI:</strong> <span className="font-bold text-blue-700 text-lg">{aiGrade.score}</span></p>
-                                <p className="mt-1"><strong>Umpan Balik:</strong> {aiGrade.feedback}</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
+        if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
+            return <p className="text-gray-500 italic">Tidak dijawab</p>;
         }
         
-        // Render logic for other question types can be added here
-        return <p className="text-gray-700">{JSON.stringify(answer.value)}</p>;
+        switch (question.type) {
+            case QuestionType.SINGLE_CHOICE: {
+                const selectedOption = question.options?.find(opt => opt.id === value);
+                return <p>{selectedOption?.text || 'Jawaban tidak valid'}</p>;
+            }
+            case QuestionType.MULTIPLE_CHOICE_COMPLEX: {
+                const selectedOptions = question.options?.filter(opt => (value as string[]).includes(opt.id));
+                if (!selectedOptions || selectedOptions.length === 0) return <p className="text-gray-500 italic">Tidak dijawab</p>;
+                return <ul className="list-disc list-inside">{selectedOptions.map(opt => <li key={opt.id}>{opt.text}</li>)}</ul>;
+            }
+            case QuestionType.MATCHING: {
+                const answerMap = value as Record<string, string>;
+                return (
+                    <ul className="list-none space-y-1">
+                        {question.matchingPrompts?.map(prompt => {
+                            const answerId = answerMap[prompt.id];
+                            const answerText = question.matchingAnswers?.find(ans => ans.id === answerId)?.text || <span className="italic text-gray-500">Kosong</span>;
+                            return <li key={prompt.id}><span className="font-medium">{prompt.text}</span> &rarr; {answerText}</li>
+                        })}
+                    </ul>
+                );
+            }
+            case QuestionType.SHORT_ANSWER:
+                return <p className="font-mono p-1 bg-gray-100 inline-block rounded">{value}</p>;
+
+            case QuestionType.ESSAY:
+                return <p className="p-2 bg-gray-50 border rounded-md whitespace-pre-wrap">{value}</p>;
+
+            default:
+                return <p className="text-gray-700">{JSON.stringify(value)}</p>;
+        }
+    };
+
+    const renderCorrectAnswer = (question: Question) => {
+        const correctAnswer = question.correctAnswer;
+        if (correctAnswer === undefined || correctAnswer === null || (Array.isArray(correctAnswer) && correctAnswer.length === 0)) {
+             return <p className="text-gray-500 italic">Kunci jawaban tidak diatur</p>;
+        }
+        if (question.type === QuestionType.ESSAY || question.type === QuestionType.SURVEY) {
+             return null;
+        }
+        const answerForRenderer: Answer | undefined = { questionId: question.id, value: correctAnswer };
+        return renderAnswer(question, answerForRenderer);
+    };
+
+    const isAnswerCorrect = (question: Question, answer: Answer | undefined): boolean | null => {
+        if(question.type === QuestionType.ESSAY || question.type === QuestionType.SURVEY) return null;
+        if(!answer || answer.value === undefined) return false;
+        return JSON.stringify(answer.value) === JSON.stringify(question.correctAnswer);
     };
 
     return (
@@ -152,24 +129,48 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
             {!isLoading && submission && (
                 <div className="space-y-6">
                     <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                        {questions.map((q, index) => (
-                            <div key={q.id} className="pb-4 border-b">
-                                <p className="font-semibold text-gray-800">{index + 1}. {q.questionText}</p>
-                                <div className="mt-2 pl-4">
-                                    {renderAnswer(q)}
+                        {questions.map((q, index) => {
+                            const studentAnswer = findAnswer(q.id);
+                            const isCorrect = isAnswerCorrect(q, studentAnswer);
+                            
+                            let borderColor = 'border-gray-200';
+                            if(isCorrect === true) borderColor = 'border-green-400';
+                            if(isCorrect === false) borderColor = 'border-red-400';
+
+                            return (
+                                <div key={q.id} className={`pb-4 pt-2 px-3 border-l-4 ${borderColor}`}>
+                                    <p className="font-semibold text-gray-800">{index + 1}. {q.questionText}</p>
+                                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                        <div>
+                                            <h4 className="text-sm font-bold text-gray-600 mb-1 flex items-center">
+                                                Jawaban Siswa: 
+                                                {isCorrect === true && <span className="ml-2 text-green-600">✅ Benar</span>}
+                                                {isCorrect === false && <span className="ml-2 text-red-600">❌ Salah</span>}
+                                            </h4>
+                                            {renderAnswer(q, studentAnswer)}
+                                        </div>
+                                        { isCorrect === false && q.type !== QuestionType.ESSAY && (
+                                            <div className="bg-green-50 p-2 rounded-md border border-green-200">
+                                                <h4 className="text-sm font-bold text-green-700 mb-1">Kunci Jawaban:</h4>
+                                                {renderCorrectAnswer(q)}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                     <div className="pt-4 border-t flex flex-col sm:flex-row items-center justify-end gap-4 bg-gray-50 -m-6 p-6 rounded-b-lg">
                         <div className="flex items-center gap-2">
-                            <label htmlFor="finalScore" className="font-semibold text-gray-700">Nilai Akhir:</label>
+                            <label htmlFor="finalScore" className="font-semibold text-gray-700">Koreksi & Nilai Akhir:</label>
                             <Input
                                 id="finalScore"
                                 type="number"
                                 value={finalScore}
-                                onChange={(e) => setFinalScore(parseInt(e.target.value))}
+                                onChange={(e) => setFinalScore(parseInt(e.target.value) > 100 ? 100 : parseInt(e.target.value) < 0 ? 0 : parseInt(e.target.value))}
                                 className="w-24 font-bold text-lg"
+                                max={100}
+                                min={0}
                             />
                         </div>
                         <Button onClick={handleSaveFinalScore} isLoading={isLoading}>

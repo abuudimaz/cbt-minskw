@@ -6,6 +6,7 @@ import LoadingSpinner from '../shared/LoadingSpinner';
 import Card from '../shared/Card';
 import StudentFormModal from './StudentFormModal';
 import StudentImportModal from './StudentImportModal';
+import { toastSuccess, toastError } from '../../utils/helpers';
 
 const StudentManagement: React.FC = () => {
     const [students, setStudents] = useState<Student[]>([]);
@@ -37,20 +38,24 @@ const StudentManagement: React.FC = () => {
         setSelectedStudent(student);
         setIsFormModalOpen(true);
     };
+    
+    const handleCloseFormModal = () => {
+        setIsFormModalOpen(false);
+        setSelectedStudent(null);
+    };
 
     const handleSaveStudent = async (studentData: Student) => {
         try {
-            // Check if student with same nis already exists in the current state
-            const studentExists = students.some(s => s.nis === studentData.nis);
-            if (studentExists) {
+            if (selectedStudent) { // If we were editing a student (selectedStudent is not null)
                 await apiUpdateStudent(studentData);
-            } else {
+            } else { // Otherwise, we are creating a new student
                 await apiCreateStudent(studentData);
             }
+            toastSuccess('Data siswa berhasil disimpan.');
             fetchStudents();
-            setIsFormModalOpen(false);
+            handleCloseFormModal();
         } catch (err: any) {
-            alert(`Gagal menyimpan data siswa: ${err.message}`);
+            toastError(`Gagal menyimpan data siswa: ${err.message}`);
         }
     };
 
@@ -58,9 +63,10 @@ const StudentManagement: React.FC = () => {
         if (window.confirm('Apakah Anda yakin ingin menghapus siswa ini?')) {
             try {
                 await apiDeleteStudent(nis);
+                toastSuccess('Siswa berhasil dihapus.');
                 fetchStudents();
             } catch (err) {
-                alert('Gagal menghapus siswa.');
+                toastError('Gagal menghapus siswa.');
             }
         }
     };
@@ -68,21 +74,21 @@ const StudentManagement: React.FC = () => {
     const handleImportStudents = async (importedStudents: Student[]) => {
         try {
             const { added, skipped } = await apiImportStudents(importedStudents);
-            let alertMessage = '';
+            let successMessage = '';
             if (added > 0) {
-                alertMessage += `${added} data siswa berhasil diimpor.`;
+                successMessage += `${added} data siswa berhasil diimpor.`;
             }
             if (skipped > 0) {
-                alertMessage += `\n${skipped} data dilewati karena NIS sudah ada.`;
+                successMessage += `\n${skipped} data dilewati karena NIS sudah ada.`;
             }
-            if (!alertMessage) {
-                alertMessage = 'Tidak ada data siswa baru untuk diimpor.';
+            if (!successMessage) {
+                successMessage = 'Tidak ada data siswa baru untuk diimpor.';
             }
-            alert(alertMessage.trim());
+            toastSuccess(successMessage.trim());
             fetchStudents();
             setIsImportModalOpen(false);
         } catch (err: any) {
-            alert(`Gagal mengimpor data siswa: ${err.message}`);
+            toastError(`Gagal mengimpor data siswa: ${err.message}`);
         }
     };
 
@@ -132,7 +138,7 @@ const StudentManagement: React.FC = () => {
 
             <StudentFormModal
                 isOpen={isFormModalOpen}
-                onClose={() => setIsFormModalOpen(false)}
+                onClose={handleCloseFormModal}
                 onSave={handleSaveStudent}
                 student={selectedStudent}
             />

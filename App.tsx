@@ -10,6 +10,7 @@ import StudentDashboard from './components/student/StudentDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ExamInterface from './components/student/ExamInterface';
 import { APP_TITLE } from './constants';
+import { ToastContainer } from 'react-toastify';
 
 const ViewRenderer: React.FC = () => {
     const { currentView, selectedExam, user } = useAuth();
@@ -52,6 +53,18 @@ const App: React.FC = () => {
                     <p>&copy; {new Date().getFullYear()} {APP_TITLE}. All rights reserved.</p>
                     <p className="mt-1">dev by Mahfud Sidik</p>
                 </footer>
+                <ToastContainer
+                    position="top-right"
+                    autoClose={3000}
+                    hideProgressBar={false}
+                    newestOnTop={false}
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                    theme="light"
+                />
             </div>
         </AuthProvider>
     );

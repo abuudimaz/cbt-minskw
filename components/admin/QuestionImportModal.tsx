@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Exam, Question, QuestionType } from '../../types';
 import Modal from '../shared/Modal';
@@ -43,7 +44,8 @@ const QuestionImportModal: React.FC<QuestionImportModalProps> = ({ isOpen, onClo
                     const questionText = row.questionText || row.pertanyaan;
                     if (!questionText) throw new Error(`Baris ${index + 2}: Kolom 'questionText' tidak ditemukan.`);
 
-                    const questionTypeStr = row.questionType || QuestionType.SINGLE_CHOICE;
+                    // FIX: Ensure questionTypeStr is a string before calling toLowerCase
+                    const questionTypeStr = String(row.questionType || QuestionType.SINGLE_CHOICE);
                     const questionType = Object.values(QuestionType).find(t => t.toLowerCase() === questionTypeStr.toLowerCase()) || QuestionType.SINGLE_CHOICE;
 
                     const questionImageUrl = row.questionImageUrl || undefined;
