@@ -54,6 +54,8 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({ isOpen, onClose, onSave, 
                 endTime: '',
             });
         }
+        // Clear previous errors when modal opens or data changes
+        setError('');
     }, [exam, isOpen]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -73,6 +75,23 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({ isOpen, onClose, onSave, 
             setError('Nama ujian dan durasi (harus > 0) wajib diisi.');
             return;
         }
+
+        // --- TIME VALIDATION LOGIC ---
+        const startTime = formData.startTime ? new Date(formData.startTime) : null;
+        const endTime = formData.endTime ? new Date(formData.endTime) : null;
+
+        // 1. Validate that endTime is after startTime
+        if (startTime && endTime && endTime <= startTime) {
+            setError('Waktu selesai harus setelah waktu mulai.');
+            return;
+        }
+
+        // 2. Validate that endTime is not in the past
+        if (endTime && endTime < new Date()) {
+            setError('Waktu selesai tidak boleh ditetapkan di masa lalu.');
+            return;
+        }
+        // --- END OF VALIDATION LOGIC ---
 
         const examData: Omit<Exam, 'id' | 'questionCount'> = {
             name: formData.name,
