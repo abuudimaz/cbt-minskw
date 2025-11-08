@@ -97,7 +97,7 @@ const DaftarHadir: React.FC = () => {
             </Card>
 
             {/* --- PRINTABLE DOCUMENT --- */}
-            <div className={`printable-content bg-white p-8 shadow-lg text-black`}>
+            <div className={`printable-content bg-white p-8 shadow-lg`}>
                 {/* KOP SURAT */}
                 <header className="text-center border-b-4 border-black pb-2">
                     <div className="flex items-center justify-center">
@@ -134,7 +134,7 @@ const DaftarHadir: React.FC = () => {
                 </table>
                 
                 {/* TABLE DAFTAR HADIR */}
-                <main className="mt-6">
+                <main className="mt-6 text-black">
                     <table className="w-full border-collapse border border-black">
                         <thead className="bg-gray-200 text-center">
                             <tr>
