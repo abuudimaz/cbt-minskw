@@ -40,7 +40,9 @@ const StudentManagement: React.FC = () => {
 
     const handleSaveStudent = async (studentData: Student) => {
         try {
-            if (students.some(s => s.nis === studentData.nis)) {
+            // Check if student with same nis already exists in the current state
+            const studentExists = students.some(s => s.nis === studentData.nis);
+            if (studentExists) {
                 await apiUpdateStudent(studentData);
             } else {
                 await apiCreateStudent(studentData);
@@ -62,17 +64,28 @@ const StudentManagement: React.FC = () => {
             }
         }
     };
-
+    
     const handleImportStudents = async (importedStudents: Student[]) => {
         try {
-            await apiImportStudents(importedStudents);
-            alert(`${importedStudents.length} data siswa berhasil diimpor.`);
+            const { added, skipped } = await apiImportStudents(importedStudents);
+            let alertMessage = '';
+            if (added > 0) {
+                alertMessage += `${added} data siswa berhasil diimpor.`;
+            }
+            if (skipped > 0) {
+                alertMessage += `\n${skipped} data dilewati karena NIS sudah ada.`;
+            }
+            if (!alertMessage) {
+                alertMessage = 'Tidak ada data siswa baru untuk diimpor.';
+            }
+            alert(alertMessage.trim());
             fetchStudents();
             setIsImportModalOpen(false);
         } catch (err: any) {
             alert(`Gagal mengimpor data siswa: ${err.message}`);
         }
     };
+
 
     if (isLoading) return <LoadingSpinner text="Memuat data siswa..." />;
     if (error) return <p className="text-red-500">{error}</p>;

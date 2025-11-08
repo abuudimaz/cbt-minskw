@@ -69,9 +69,11 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({ isOpen, onClose
     };
 
     const handleClose = () => {
+        // Reset state when closing the modal
         setStudents([]);
         setError('');
         setFileName('');
+        // FIX: 'setProcessing' is not defined. It should be 'setIsProcessing'.
         setIsProcessing(false);
         onClose();
     };
@@ -103,7 +105,7 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({ isOpen, onClose
                 <div className="flex justify-end space-x-2 pt-4">
                     <Button type="button" variant="secondary" onClick={handleClose}>Batal</Button>
                     <Button onClick={handleImport} disabled={students.length === 0 || isProcessing}>
-                        Import {students.length > 0 ? students.length : ''} Siswa
+                        Import {students.length > 0 ? ` ${students.length}` : ''} Siswa
                     </Button>
                 </div>
             </div>

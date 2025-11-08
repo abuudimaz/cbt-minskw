@@ -24,7 +24,7 @@ const defaultDB = {
         { nis: '1003', name: 'Dewi Anggraini', class: '6B', room: '2', password: 'password123' },
     ],
     admins: [
-        { id: 'admin', name: 'Admin Proktor', role: Role.ADMIN, password: 'admin' },
+        { id: 'admin', name: 'Admin Proktor', role: Role.ADMIN, password: 'admin123' },
     ],
     exams: [
         { id: 'exam1', name: 'Asesmen Literasi Paket 1', type: AssessmentType.LITERASI, duration: 60, questionCount: 2, token: 'TOKEN123', order: 0 },
@@ -133,13 +133,26 @@ export const apiDeleteStudent = async (nis: string): Promise<void> => {
     saveDb(db);
 };
 
-export const apiImportStudents = async (students: Student[]): Promise<void> => {
+export const apiImportStudents = async (students: Student[]): Promise<{ added: number, skipped: number }> => {
     await delay(1000);
     const db = getDb();
     const existingNis = new Set(db.students.map((s: Student) => s.nis));
-    const newStudents = students.filter(s => !existingNis.has(s.nis));
-    db.students.push(...newStudents);
+    
+    let added = 0;
+    let skipped = 0;
+
+    students.forEach(student => {
+        if (!existingNis.has(student.nis)) {
+            db.students.push(student);
+            existingNis.add(student.nis);
+            added++;
+        } else {
+            skipped++;
+        }
+    });
+
     saveDb(db);
+    return { added, skipped };
 };
 
 // Exams
