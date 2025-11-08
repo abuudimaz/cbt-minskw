@@ -101,7 +101,7 @@ const DaftarHadir: React.FC = () => {
             </Card>
 
             {/* --- PRINTABLE DOCUMENT --- */}
-            <div className="printable-content bg-white p-8 shadow-lg print:p-0 print:shadow-none print:text-sm">
+            <div className="printable-content bg-white p-8 shadow-lg text-black print:p-0 print:shadow-none print:text-sm">
                 {/* KOP SURAT */}
                 <header className="text-center border-b-4 border-black pb-2">
                     <div className="flex items-center justify-center">

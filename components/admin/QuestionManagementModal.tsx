@@ -5,6 +5,7 @@ import Modal from '../shared/Modal';
 import Button from '../shared/Button';
 import Input from '../shared/Input';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import AIQuestionGeneratorModal from './AIQuestionGeneratorModal';
 
 const base64FromFile = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -216,6 +217,7 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
 
     const fetchQuestions = useCallback(async () => {
@@ -256,6 +258,12 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
         }
     };
     
+    const handleAIQuestionsGenerated = async () => {
+        setIsAIGeneratorOpen(false);
+        await fetchQuestions();
+        onQuestionsUpdate();
+    }
+
     const typeColorMap: Record<QuestionType, string> = {
         [QuestionType.SINGLE_CHOICE]: 'bg-blue-100 text-blue-800',
         [QuestionType.MULTIPLE_CHOICE_COMPLEX]: 'bg-purple-100 text-purple-800',
@@ -266,40 +274,51 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={isFormOpen ? `Soal untuk ${exam.name}` : `Manajemen Soal: ${exam.name}`} size="xl">
-            {isFormOpen ? (
-                <QuestionForm question={editingQuestion} onSave={handleSaveQuestion} onCancel={handleCloseForm} />
-            ) : (
-                <>
-                    <div className="mb-4 flex justify-end">
-                        <Button onClick={() => handleOpenForm(null)}>+ Tambah Soal Manual</Button>
-                    </div>
-                    {isLoading && <LoadingSpinner text="Memuat soal..." />}
-                    {error && <p className="text-red-500">{error}</p>}
-                    {!isLoading && !error && (
-                        <div className="space-y-3">
-                            {questions.length > 0 ? questions.map((q, index) => (
-                                <div key={q.id} className="p-4 border rounded-lg flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-3">
-                                            <span className="font-bold text-gray-700">{index + 1}.</span>
-                                            <p className="font-medium text-gray-800 truncate" title={q.questionText}>{q.questionText}</p>
-                                        </div>
-                                        <div className="mt-2">
-                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${typeColorMap[q.type]}`}>{q.type}</span>
-                                        </div>
-                                    </div>
-                                    <div className="space-x-2 flex-shrink-0 ml-4">
-                                        <Button size="sm" variant="secondary" onClick={() => handleOpenForm(q)}>Edit</Button>
-                                        <Button size="sm" variant="danger" onClick={() => handleDeleteQuestion(q.id)}>Hapus</Button>
-                                    </div>
-                                </div>
-                            )) : <p className="text-center text-gray-500 py-10">Belum ada soal untuk ujian ini. Silakan tambah soal secara manual atau impor dari file.</p>}
+        <>
+            <Modal isOpen={isOpen} onClose={onClose} title={isFormOpen ? `Soal untuk ${exam.name}` : `Manajemen Soal: ${exam.name}`} size="xl">
+                {isFormOpen ? (
+                    <QuestionForm question={editingQuestion} onSave={handleSaveQuestion} onCancel={handleCloseForm} />
+                ) : (
+                    <>
+                        <div className="mb-4 flex justify-end space-x-2">
+                            <Button variant="secondary" onClick={() => setIsAIGeneratorOpen(true)}>
+                                ✨ Generate Soal AI
+                            </Button>
+                            <Button onClick={() => handleOpenForm(null)}>+ Tambah Soal Manual</Button>
                         </div>
-                    )}
-                </>
-            )}
-        </Modal>
+                        {isLoading && <LoadingSpinner text="Memuat soal..." />}
+                        {error && <p className="text-red-500">{error}</p>}
+                        {!isLoading && !error && (
+                            <div className="space-y-3">
+                                {questions.length > 0 ? questions.map((q, index) => (
+                                    <div key={q.id} className="p-4 border rounded-lg flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-bold text-gray-700">{index + 1}.</span>
+                                                <p className="font-medium text-gray-800 truncate" title={q.questionText}>{q.questionText}</p>
+                                            </div>
+                                            <div className="mt-2">
+                                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${typeColorMap[q.type]}`}>{q.type}</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-x-2 flex-shrink-0 ml-4">
+                                            <Button size="sm" variant="secondary" onClick={() => handleOpenForm(q)}>Edit</Button>
+                                            <Button size="sm" variant="danger" onClick={() => handleDeleteQuestion(q.id)}>Hapus</Button>
+                                        </div>
+                                    </div>
+                                )) : <p className="text-center text-gray-500 py-10">Belum ada soal untuk ujian ini. Silakan tambah soal secara manual atau impor dari file.</p>}
+                            </div>
+                        )}
+                    </>
+                )}
+            </Modal>
+            <AIQuestionGeneratorModal 
+                isOpen={isAIGeneratorOpen}
+                onClose={() => setIsAIGeneratorOpen(false)}
+                exam={exam}
+                onQuestionsGenerated={handleAIQuestionsGenerated}
+            />
+        </>
     );
 };
 

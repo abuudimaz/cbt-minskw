@@ -10,7 +10,8 @@ import {
     ExamResult,
     ExamSettings,
     AssessmentType,
-    QuestionType
+    QuestionType,
+    Submission
 } from '../types';
 
 // --- MOCK DATABASE & HELPERS ---
@@ -27,16 +28,18 @@ const defaultDB = {
         { id: 'admin', name: 'Admin Proktor', role: Role.ADMIN, password: 'admin123' },
     ],
     exams: [
-        { id: 'exam1', name: 'Asesmen Literasi Paket 1', type: AssessmentType.LITERASI, duration: 60, questionCount: 2, token: 'TOKEN123', order: 0 },
+        { id: 'exam1', name: 'Asesmen Literasi Paket 1', type: AssessmentType.LITERASI, duration: 60, questionCount: 3, token: 'TOKEN123', order: 0 },
         { id: 'exam2', name: 'Asesmen Numerasi Paket 1', type: AssessmentType.NUMERASI, duration: 75, questionCount: 1, order: 1 },
         { id: 'exam3', name: 'Survei Karakter', type: AssessmentType.SURVEI_KARAKTER, duration: 30, questionCount: 0, order: 2 },
     ],
     questions: [
         { id: 'q1', examId: 'exam1', questionText: 'Apa ibu kota Indonesia?', type: QuestionType.SINGLE_CHOICE, options: [{id: 'q1o1', text: 'Jakarta'}, {id: 'q1o2', text: 'Bandung'}, {id: 'q1o3', text: 'Surabaya'}], correctAnswer: 'q1o1' },
         { id: 'q2', examId: 'exam1', questionText: 'Pilih dua angka genap.', type: QuestionType.MULTIPLE_CHOICE_COMPLEX, options: [{id: 'q2o1', text: '2'}, {id: 'q2o2', text: '3'}, {id: 'q2o3', text: '4'}], correctAnswer: ['q2o1', 'q2o3'] },
+        { id: 'q2_essay', examId: 'exam1', questionText: 'Jelaskan secara singkat mengapa penting untuk menjaga kebersihan lingkungan.', type: QuestionType.ESSAY },
         { id: 'q3', examId: 'exam2', questionText: '2 + 2 = ?', type: QuestionType.SHORT_ANSWER, correctAnswer: '4' },
     ],
     results: [],
+    submissions: [],
     studentStatuses: {}, // { nis: { examId: string, status: StudentExamStatus } }
     settings: {
         assessmentTitle: 'ASESMEN MADRASAH BERBASIS KOMPUTER (AMBK)',
@@ -327,10 +330,21 @@ export const apiSubmitAnswers = async (studentId: string, examId: string, answer
     const exam = db.exams.find((e: Exam) => e.id === examId);
     if (!student || !exam) throw new Error("Data siswa atau ujian tidak valid.");
 
+    const submissionId = `sub_${student.nis}_${exam.id}_${Date.now()}`;
+    const newSubmission: Submission = {
+        id: submissionId,
+        nis: student.nis,
+        examId: exam.id,
+        answers: answers,
+        submittedAt: new Date(),
+    };
+    db.submissions.push(newSubmission);
+
     const questions = db.questions.filter((q: Question) => q.examId === examId);
     const score = calculateScore(questions, answers);
 
     const newResult: ExamResult = {
+        id: `res_${submissionId}`,
         nis: student.nis,
         name: student.name,
         class: student.class,
@@ -340,10 +354,23 @@ export const apiSubmitAnswers = async (studentId: string, examId: string, answer
         submittedAt: new Date(),
     };
 
+    // Remove previous result for the same student and exam to prevent duplicates
+    db.results = db.results.filter((r: ExamResult) => !(r.nis === student.nis && r.examId === exam.id));
     db.results.push(newResult);
-    // You'd also update student status here
+
     saveDb(db);
 };
+
+export const apiGetSubmission = async (nis: string, examId: string): Promise<Submission | null> => {
+    await delay(500);
+    const db = getDb();
+    // Find the latest submission for that student and exam
+    const submission = [...db.submissions]
+        .reverse()
+        .find((s: Submission) => s.nis === nis && s.examId === examId);
+    return submission || null;
+};
+
 
 // Admin Dashboard
 export const apiGetMonitoringData = async (): Promise<MonitoredStudent[]> => {
@@ -369,6 +396,17 @@ export const apiGetExamResults = async (): Promise<ExamResult[]> => {
     const db = getDb();
     return [...db.results];
 };
+
+export const apiUpdateExamResult = async (resultId: string, newScore: number): Promise<ExamResult> => {
+    await delay(500);
+    const db = getDb();
+    const result = db.results.find((r: ExamResult) => r.id === resultId);
+    if (!result) throw new Error('Hasil ujian tidak ditemukan.');
+    result.score = newScore;
+    saveDb(db);
+    return { ...result };
+};
+
 
 export const apiUpdateAdminProfile = async (adminId: string, name: string, password?: string): Promise<User> => {
     await delay(500);

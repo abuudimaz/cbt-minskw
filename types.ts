@@ -90,6 +90,15 @@ export interface Answer {
     value: any;
 }
 
+export interface Submission {
+    id: string;
+    nis: string;
+    examId: string;
+    answers: Answer[];
+    submittedAt: Date;
+}
+
+
 export enum StudentExamStatus {
     NOT_STARTED = 'Belum Mulai',
     IN_PROGRESS = 'Mengerjakan',
@@ -105,6 +114,7 @@ export interface MonitoredStudent {
 }
 
 export interface ExamResult {
+    id: string; // Unique ID for the result entry
     nis: string;
     name: string;
     class: string;
