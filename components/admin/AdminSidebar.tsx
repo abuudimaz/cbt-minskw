@@ -9,15 +9,16 @@ interface AdminSidebarProps {
     setIsCollapsed: (isCollapsed: boolean) => void;
 }
 
-const tabs: { id: AdminTab; label: string; icon: React.ReactElement }[] = [
-    { id: 'monitoring', label: 'Status Ujian', icon: <ComputerDesktopIcon /> },
-    { id: 'exams', label: 'Manajemen Soal', icon: <BookOpenIcon /> },
-    { id: 'students', label: 'Manajemen Siswa', icon: <UserGroupIcon /> },
-    { id: 'results', label: 'Hasil Ujian', icon: <ChartBarIcon /> },
-    { id: 'beritaAcara', label: 'Berita Acara', icon: <DocumentTextIcon /> },
-    { id: 'daftarHadir', label: 'Daftar Hadir', icon: <ClipboardDocumentListIcon /> },
-    { id: 'settings', label: 'Pengaturan Ujian', icon: <Cog6ToothIcon /> },
-    { id: 'profile', label: 'Profil Admin', icon: <UserCircleIcon /> },
+// Store component types (functions) instead of rendered elements (<Component />)
+const tabs: { id: AdminTab; label: string; icon: React.ComponentType }[] = [
+    { id: 'monitoring', label: 'Status Ujian', icon: ComputerDesktopIcon },
+    { id: 'exams', label: 'Manajemen Soal', icon: BookOpenIcon },
+    { id: 'students', label: 'Manajemen Siswa', icon: UserGroupIcon },
+    { id: 'results', label: 'Hasil Ujian', icon: ChartBarIcon },
+    { id: 'beritaAcara', label: 'Berita Acara', icon: DocumentTextIcon },
+    { id: 'daftarHadir', label: 'Daftar Hadir', icon: ClipboardDocumentListIcon },
+    { id: 'settings', label: 'Pengaturan Ujian', icon: Cog6ToothIcon },
+    { id: 'profile', label: 'Profil Admin', icon: UserCircleIcon },
 ];
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed }) => {
@@ -33,29 +34,33 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, is
             </div>
 
             <nav className="flex-grow mt-5">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`group relative flex items-center w-full py-4 text-left transition-colors duration-200 ${
-                            isCollapsed ? 'justify-center' : 'px-6'
-                        } ${
-                            activeTab === tab.id
-                                ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600 font-semibold'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
-                        }`}
-                    >
-                        {tab.icon}
-                        {!isCollapsed && <span className="ml-4">{tab.label}</span>}
-                        
-                        {/* Custom Tooltip for collapsed state */}
-                        {isCollapsed && (
-                            <span className="absolute left-full ml-4 items-center rounded-md bg-gray-800 px-2 py-1 text-xs font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 whitespace-nowrap z-20 pointer-events-none">
-                                {tab.label}
-                            </span>
-                        )}
-                    </button>
-                ))}
+                {tabs.map((tab) => {
+                    // Assign the component type to a capitalized variable for JSX
+                    const IconComponent = tab.icon;
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`group relative flex items-center w-full py-4 text-left transition-colors duration-200 ${
+                                isCollapsed ? 'justify-center' : 'px-6'
+                            } ${
+                                activeTab === tab.id
+                                    ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600 font-semibold'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
+                            }`}
+                        >
+                            <IconComponent />
+                            {!isCollapsed && <span className="ml-4">{tab.label}</span>}
+                            
+                            {/* Custom Tooltip for collapsed state */}
+                            {isCollapsed && (
+                                <span className="absolute left-full ml-4 items-center rounded-md bg-gray-800 px-2 py-1 text-xs font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 whitespace-nowrap z-20 pointer-events-none">
+                                    {tab.label}
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
             </nav>
 
             <div className="border-t p-2">

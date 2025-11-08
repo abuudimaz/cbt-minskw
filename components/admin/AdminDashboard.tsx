@@ -11,7 +11,7 @@ import ExamSettings from './ExamSettings';
 
 export type AdminTab = 'monitoring' | 'exams' | 'students' | 'results' | 'beritaAcara' | 'daftarHadir' | 'settings' | 'profile';
 
-// FIX: Store component types (the function/class itself) instead of rendered JSX elements.
+// Store component types (the function/class itself) instead of rendered JSX elements.
 // This is the standard and more stable pattern for dynamic component rendering in React.
 const componentMap: { [key in AdminTab]: React.ComponentType } = {
     monitoring: MonitoringDashboard,
@@ -40,7 +40,7 @@ const AdminDashboard: React.FC = () => {
                 setIsCollapsed={setIsSidebarCollapsed}
             />
             <div className={`flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
-                {/* FIX: Render the component using JSX syntax <ActiveComponent /> */}
+                {/* Render the component using JSX syntax <ActiveComponent /> */}
                 <ActiveComponent />
             </div>
         </div>

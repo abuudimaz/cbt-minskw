@@ -20,7 +20,6 @@ const StudentDashboard: React.FC = () => {
             setIsLoading(true);
             try {
                 const [examsData, resultsData] = await Promise.all([
-                    // FIX: apiGetExamsForStudent expects 0 arguments.
                     apiGetExamsForStudent(),
                     apiGetResultsForStudent(user.id)
                 ]);
@@ -66,6 +65,13 @@ const StudentDashboard: React.FC = () => {
         downloadCSV(dataToExport, `hasil_ujian_${user.name.replace(/\s+/g, '_')}.csv`);
     };
 
+    const formatExamTime = (date: Date | null | undefined): string | null => {
+        if (!date) return null;
+        return new Date(date).toLocaleString('id-ID', {
+            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+    };
+
     if (isLoading) return <LoadingSpinner text="Memuat daftar ujian..." />;
     if (error) return <p className="text-red-500">{error}</p>;
 
@@ -80,11 +86,34 @@ const StudentDashboard: React.FC = () => {
             {exams.length > 0 ? (
                 <div className="space-y-4">
                     {exams.map(exam => {
+                        const now = new Date();
+                        const examStartTime = exam.startTime ? new Date(exam.startTime) : null;
+                        const examEndTime = exam.endTime ? new Date(exam.endTime) : null;
+                        
                         const result = results.find(r => r.examId === exam.id);
                         const isCompleted = !!result;
-                        const status = isCompleted 
-                            ? { text: 'Selesai Dikerjakan', color: 'bg-green-100 text-green-800' }
-                            : { text: 'Belum Dikerjakan', color: 'bg-gray-100 text-gray-800' };
+
+                        let statusText = 'Belum Dikerjakan';
+                        let statusColor = 'bg-gray-100 text-gray-800';
+                        let isButtonDisabled = false;
+                        let buttonText = 'Mulai Kerjakan';
+
+                        if (isCompleted) {
+                            statusText = 'Selesai Dikerjakan';
+                            statusColor = 'bg-green-100 text-green-800';
+                            isButtonDisabled = true;
+                            buttonText = 'Telah Dikerjakan';
+                        } else if (examStartTime && now < examStartTime) {
+                            statusText = 'Akan dibuka';
+                            statusColor = 'bg-yellow-100 text-yellow-800';
+                            isButtonDisabled = true;
+                            buttonText = 'Belum Dibuka';
+                        } else if (examEndTime && now > examEndTime) {
+                            statusText = 'Waktu Habis';
+                            statusColor = 'bg-red-100 text-red-800';
+                            isButtonDisabled = true;
+                            buttonText = 'Waktu Habis';
+                        }
 
                         return (
                             <Card key={exam.id} className="transition hover:shadow-xl">
@@ -97,8 +126,8 @@ const StudentDashboard: React.FC = () => {
                                             <span>{exam.questionCount} Soal</span>
                                             <span>&bull;</span>
                                             <span>{exam.duration} Menit</span>
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
-                                                {status.text}
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
+                                                {statusText}
                                             </span>
                                             {isCompleted && result && (
                                                 <>
@@ -109,9 +138,13 @@ const StudentDashboard: React.FC = () => {
                                                 </>
                                             )}
                                         </div>
+                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mt-2">
+                                            {exam.startTime && <span><strong>Mulai:</strong> {formatExamTime(exam.startTime)}</span>}
+                                            {exam.endTime && <span><strong>Selesai:</strong> {formatExamTime(exam.endTime)}</span>}
+                                        </div>
                                     </div>
-                                    <Button onClick={() => handleStartExam(exam)} disabled={isCompleted}>
-                                        {isCompleted ? 'Telah Dikerjakan' : 'Mulai Kerjakan'}
+                                    <Button onClick={() => handleStartExam(exam)} disabled={isButtonDisabled}>
+                                        {buttonText}
                                     </Button>
                                 </div>
                             </Card>

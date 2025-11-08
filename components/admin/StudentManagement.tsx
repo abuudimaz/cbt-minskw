@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Student } from '../../types';
-import { apiGetStudents, apiCreateStudent, apiUpdateStudent, apiDeleteStudent, apiImportStudents } from '../../services/api';
+import { apiGetStudents, apiCreateStudent, apiUpdateStudent, apiDeleteStudent, apiImportStudents, apiDeleteStudents } from '../../services/api';
 import Button from '../shared/Button';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import Card from '../shared/Card';
 import StudentFormModal from './StudentFormModal';
 import StudentImportModal from './StudentImportModal';
-import { toastSuccess, toastError } from '../../utils/helpers';
+import ConfirmationModal from '../shared/ConfirmationModal';
+import { toastSuccess, toastError, downloadCSV } from '../../utils/helpers';
 
 const StudentManagement: React.FC = () => {
     const [students, setStudents] = useState<Student[]>([]);
@@ -17,6 +18,21 @@ const StudentManagement: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+    const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+    
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [confirmModalState, setConfirmModalState] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => Promise<void>;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: async () => {},
+    });
+
 
     const fetchStudents = async () => {
         setIsLoading(true);
@@ -59,16 +75,25 @@ const StudentManagement: React.FC = () => {
         }
     };
 
-    const handleDeleteStudent = async (nis: string) => {
-        if (window.confirm('Apakah Anda yakin ingin menghapus siswa ini?')) {
-            try {
-                await apiDeleteStudent(nis);
-                toastSuccess('Siswa berhasil dihapus.');
-                fetchStudents();
-            } catch (err) {
-                toastError('Gagal menghapus siswa.');
-            }
-        }
+    const handleDeleteStudent = (nis: string, name: string) => {
+        setConfirmModalState({
+            isOpen: true,
+            title: 'Konfirmasi Hapus Siswa',
+            message: `Apakah Anda yakin ingin menghapus siswa "${name}" (NIS: ${nis})? Tindakan ini tidak dapat diurungkan.`,
+            onConfirm: async () => {
+                setIsDeleting(true);
+                try {
+                    await apiDeleteStudent(nis);
+                    toastSuccess('Siswa berhasil dihapus.');
+                    fetchStudents();
+                } catch (err) {
+                    toastError('Gagal menghapus siswa.');
+                } finally {
+                    setIsDeleting(false);
+                    setConfirmModalState({ isOpen: false, title: '', message: '', onConfirm: async () => {} });
+                }
+            },
+        });
     };
     
     const handleImportStudents = async (importedStudents: Student[]) => {
@@ -92,25 +117,108 @@ const StudentManagement: React.FC = () => {
         }
     };
 
+    // --- BULK ACTION HANDLERS ---
+    const handleSelect = (nis: string) => {
+        setSelectedStudents(prev => {
+            const newSelection = new Set(prev);
+            if (newSelection.has(nis)) {
+                newSelection.delete(nis);
+            } else {
+                newSelection.add(nis);
+            }
+            return newSelection;
+        });
+    };
 
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedStudents(new Set(students.map(s => s.nis)));
+        } else {
+            setSelectedStudents(new Set());
+        }
+    };
+
+    const handleDeleteSelected = () => {
+        setConfirmModalState({
+            isOpen: true,
+            title: 'Konfirmasi Hapus Massal',
+            message: `Apakah Anda yakin ingin menghapus ${selectedStudents.size} siswa terpilih? Tindakan ini tidak dapat diurungkan.`,
+            onConfirm: async () => {
+                setIsDeleting(true);
+                try {
+                    await apiDeleteStudents(Array.from(selectedStudents));
+                    toastSuccess(`${selectedStudents.size} siswa berhasil dihapus.`);
+                    setSelectedStudents(new Set());
+                    fetchStudents(); // Refresh the list
+                } catch (err) {
+                    toastError('Gagal menghapus siswa terpilih.');
+                } finally {
+                    setIsDeleting(false);
+                    setConfirmModalState({ isOpen: false, title: '', message: '', onConfirm: async () => {} });
+                }
+            },
+        });
+    };
+
+    const handleExportSelected = () => {
+        const dataToExport = students
+            .filter(s => selectedStudents.has(s.nis))
+            .map(({ nis, name, class: studentClass, room }) => ({ nis, name, class: studentClass, room })); // Exclude password
+        
+        if (dataToExport.length > 0) {
+            downloadCSV(dataToExport, `export_siswa_${new Date().toISOString().split('T')[0]}.csv`);
+        } else {
+            toastError("Tidak ada siswa terpilih untuk diekspor.");
+        }
+    };
+    
     if (isLoading) return <LoadingSpinner text="Memuat data siswa..." />;
     if (error) return <p className="text-red-500">{error}</p>;
+
+    const isAllSelected = students.length > 0 && selectedStudents.size === students.length;
 
     return (
         <>
             <Card title="Manajemen Data Siswa">
-                <div className="mb-4 flex justify-end space-x-2">
-                    <Button onClick={() => setIsImportModalOpen(true)} variant="secondary">
-                        Import Siswa
-                    </Button>
-                    <Button onClick={() => handleOpenFormModal(null)}>
-                        + Tambah Siswa Baru
-                    </Button>
+                <div className="mb-4 flex justify-between items-center">
+                    {/* Bulk Actions Bar */}
+                    <div className="flex-1">
+                        {selectedStudents.size > 0 && (
+                            <div className="flex items-center space-x-2 bg-gray-100 p-2 rounded-md">
+                                <span className="text-sm font-semibold text-gray-700">{selectedStudents.size} terpilih</span>
+                                <Button onClick={handleDeleteSelected} variant="danger" size="sm">
+                                    Hapus
+                                </Button>
+                                <Button onClick={handleExportSelected} variant="secondary" size="sm">
+                                    Export CSV
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Main Actions */}
+                    <div className="flex space-x-2">
+                        <Button onClick={() => setIsImportModalOpen(true)} variant="secondary">
+                            Import Siswa
+                        </Button>
+                        <Button onClick={() => handleOpenFormModal(null)}>
+                            + Tambah Siswa Baru
+                        </Button>
+                    </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
+                                <th className="px-6 py-3 text-left">
+                                     <input
+                                        type="checkbox"
+                                        checked={isAllSelected}
+                                        onChange={handleSelectAll}
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        aria-label="Pilih semua siswa"
+                                    />
+                                </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIS</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
@@ -120,14 +228,23 @@ const StudentManagement: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {students.map((student) => (
-                                <tr key={student.nis}>
+                                <tr key={student.nis} className={selectedStudents.has(student.nis) ? 'bg-blue-50' : ''}>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedStudents.has(student.nis)}
+                                            onChange={() => handleSelect(student.nis)}
+                                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            aria-label={`Pilih ${student.name}`}
+                                        />
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-700">{student.nis}</td>
                                     <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{student.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.class}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.room}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                         <Button size="sm" variant="secondary" onClick={() => handleOpenFormModal(student)}>Edit</Button>
-                                        <Button size="sm" variant="danger" onClick={() => handleDeleteStudent(student.nis)}>Hapus</Button>
+                                        <Button size="sm" variant="danger" onClick={() => handleDeleteStudent(student.nis, student.name)}>Hapus</Button>
                                     </td>
                                 </tr>
                             ))}
@@ -147,6 +264,18 @@ const StudentManagement: React.FC = () => {
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 onImport={handleImportStudents}
+            />
+
+            <ConfirmationModal
+                isOpen={confirmModalState.isOpen}
+                onClose={() => setConfirmModalState({ ...confirmModalState, isOpen: false })}
+                onConfirm={confirmModalState.onConfirm}
+                title={confirmModalState.title}
+                message={confirmModalState.message}
+                isLoading={isDeleting}
+                variant="danger"
+                confirmText="Ya, Hapus"
+                cancelText="Batal"
             />
         </>
     );

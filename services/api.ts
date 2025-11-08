@@ -62,19 +62,30 @@ export const apiStudentLogin = async (nis: string, password: string): Promise<Us
     const trimmedPassword = password.trim();
 
     const user = users.find(u => {
+        // 1. Ensure the record is for a student.
         if (u.role !== Role.STUDENT) {
             return false;
         }
 
-        const storedNis = String(u.nis || '').trim();
-        const storedPassword = String(u.password || '').trim();
+        // 2. Validate stored credentials. They must not be null or undefined.
+        // This prevents matching against incomplete or corrupt student data.
+        if (u.nis == null || u.password == null) {
+            return false;
+        }
+        
+        // 3. Prepare stored credentials for comparison by converting to string and trimming whitespace.
+        const storedNis = String(u.nis).trim();
+        const storedPassword = String(u.password).trim();
+        
+        // 4. Disallow login with empty credentials after trimming.
+        if (trimmedNis === '' || trimmedPassword === '') {
+            return false;
+        }
 
-        // Perbandingan NIS yang tidak case-sensitive lebih user-friendly.
-        // Ini memperlakukan NIS sebagai string ID yang unik.
+        // 5. Perform the actual comparison.
+        // NIS comparison is case-insensitive for better user experience.
         const nisMatch = storedNis.toLowerCase() === trimmedNis.toLowerCase();
-
-        // Perbandingan password HARUS berupa pencocokan string yang eksak dan case-sensitive untuk keamanan.
-        // Ini mencegah masalah di mana '0123' dan '123' diperlakukan sebagai password yang sama.
+        // Password comparison is case-sensitive and must be an exact match for security.
         const passwordMatch = storedPassword === trimmedPassword;
 
         return nisMatch && passwordMatch;
@@ -86,6 +97,7 @@ export const apiStudentLogin = async (nis: string, password: string): Promise<Us
     }
     return null;
 };
+
 
 export const apiAdminLogin = async (username: string, password: string): Promise<User | null> => {
     await delay(500);
@@ -132,6 +144,15 @@ export const apiDeleteStudent = async (nis: string): Promise<void> => {
     await delay(300);
     let users = get<any>(DB.users);
     users = users.filter(u => u.nis !== nis);
+    set(DB.users, users);
+};
+
+export const apiDeleteStudents = async (nisList: string[]): Promise<void> => {
+    await delay(500);
+    let users = get<any>(DB.users);
+    const nisSet = new Set(nisList);
+    // Only filter students. Admins should not be affected even if their id somehow matched.
+    users = users.filter(u => u.role !== Role.STUDENT || !nisSet.has(u.nis));
     set(DB.users, users);
 };
 
