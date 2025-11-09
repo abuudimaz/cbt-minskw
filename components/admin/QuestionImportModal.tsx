@@ -32,9 +32,10 @@ const QuestionImportModal: React.FC<QuestionImportModalProps> = ({ isOpen, onClo
                 const workbook = (window as any).XLSX.read(data, { type: 'binary' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
+                // Read data as an array of arrays, ignoring header text
                 const rows: any[][] = (window as any).XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-                // The first row is assumed to be the header, so we slice it off.
+                // The first row is the header, so we slice it off.
                 const dataRows = rows.slice(1);
 
                 if (dataRows.length === 0) {

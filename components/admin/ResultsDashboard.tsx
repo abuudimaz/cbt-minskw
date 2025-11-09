@@ -78,7 +78,7 @@ const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ initialResultToShow
                         Export ke CSV
                     </Button>
                 </div>
-                <div className="w-full overflow-x-auto">
+                <div className="w-full overflow-x-auto border border-gray-200 rounded-lg shadow-md">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>

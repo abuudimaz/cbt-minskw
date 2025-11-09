@@ -10,26 +10,35 @@ interface QuestionViewerProps {
 }
 
 const TextWithArabic: React.FC<{ text: string }> = ({ text }) => {
-    // This regex helps identify if there are any Arabic characters in the text.
-    const arabicRegex = /[\u0600-\u06FF]/;
-    const containsArabic = arabicRegex.test(text);
-
-    // For any text containing Arabic characters, we wrap it in a span that handles
-    // bidirectional text automatically (`dir="auto"`). The browser will correctly
-    // set the direction to right-to-left (RTL). We also apply specific styling
-    // for RTL text to ensure it's right-aligned, and use the Amiri font for
-    // better readability of Arabic script.
-    if (containsArabic) {
-        return (
-            <span dir="auto" className="font-amiri text-xl block rtl:text-right">
-                {text}
-            </span>
-        );
+    // Regex to check if there is at least one Arabic character
+    const containsArabicRegex = /[\u0600-\u06FF]/;
+    
+    // If no Arabic characters are present, render simply for performance.
+    if (!containsArabicRegex.test(text)) {
+        return <span className="text-xl">{text}</span>;
     }
 
-    // For text without Arabic characters, we render it normally with a consistent
-    // font size, inheriting the default Poppins font.
-    return <span className="text-xl">{text}</span>;
+    // Split the text by segments of Arabic characters (including spaces and punctuation commonly used with Arabic).
+    // The capturing group in split() ensures the delimiters (the Arabic parts) are kept in the resulting array.
+    const parts = text.split(/([\u0600-\u06FF\s\d.,!؟;:]+)/g);
+
+    const styledParts = parts.map((part, index) => {
+        // If a part contains Arabic, style it with the Amiri font.
+        if (part && containsArabicRegex.test(part)) {
+            return <span key={index} className="font-amiri">{part}</span>;
+        }
+        // Otherwise, render it as a standard text node (or Fragment).
+        return <React.Fragment key={index}>{part}</React.Fragment>;
+    });
+
+    // The parent span handles the overall text direction and alignment.
+    // `dir="auto"` lets the browser decide the correct direction (LTR or RTL).
+    // `rtl:text-right` ensures that if the direction is RTL, the text is right-aligned.
+    return (
+        <span dir="auto" className="text-xl block rtl:text-right">
+            {styledParts}
+        </span>
+    );
 };
 
 
@@ -38,7 +47,7 @@ const OptionImage: React.FC<{ imageUrl?: string; altText: string }> = ({ imageUr
     if (!imageUrl) {
         return null;
     }
-    return <img src={imageUrl} alt={altText} className="mt-2 rounded-md max-w-full max-h-64 object-contain" />;
+    return <img src={imageUrl} alt={altText} className="mt-2 rounded-md max-w-full max-h-64 object-contain mx-auto" />;
 };
 
 

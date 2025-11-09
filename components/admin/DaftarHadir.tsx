@@ -1,37 +1,53 @@
-import React, { useState, useEffect } from 'react';
-import { Student, ExamSettings } from '../../types';
-import { apiGetStudents, apiGetExamSettings } from '../../services/api';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Student, ExamSettings, Exam } from '../../types';
+import { apiGetStudents, apiGetExamSettings, apiGetExams } from '../../services/api';
 import Card from '../shared/Card';
 import Button from '../shared/Button';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import Input from '../shared/Input';
 import { KemenagLogo } from '../../constants';
+import { toastError } from '../../utils/helpers';
 
 const DaftarHadir: React.FC = () => {
     const [students, setStudents] = useState<Student[]>([]);
+    const [exams, setExams] = useState<Exam[]>([]);
     const [globalSettings, setGlobalSettings] = useState<ExamSettings | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [paperSize, setPaperSize] = useState<'a4' | 'f4'>('a4');
+    const [selectedExamId, setSelectedExamId] = useState<string>('');
     const [formData, setFormData] = useState({
         ujian: '',
-        ruang: 'RUANG 1',
+        ruang: '',
         hari: '',
         tanggal: new Date().toISOString().split('T')[0],
         sesi: '1',
         pengawas: '',
     });
+    
+    const uniqueRooms = useMemo(() => {
+        return [...new Set(students.map(s => s.room))].sort();
+    }, [students]);
 
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [studentsData, settingsData] = await Promise.all([
+                const [studentsData, settingsData, examsData] = await Promise.all([
                     apiGetStudents(),
-                    apiGetExamSettings()
+                    apiGetExamSettings(),
+                    apiGetExams()
                 ]);
                 setStudents(studentsData.sort((a, b) => a.name.localeCompare(b.name)));
                 setGlobalSettings(settingsData);
+                setExams(examsData);
+                
+                const rooms = [...new Set(studentsData.map(s => s.room))].sort();
+                if (rooms.length > 0) {
+                    setFormData(prev => ({ ...prev, ruang: rooms[0] }));
+                }
+
             } catch (err) {
+                toastError("Gagal memuat data.");
                 console.error("Failed to fetch data", err);
             } finally {
                 setIsLoading(false);
@@ -40,37 +56,37 @@ const DaftarHadir: React.FC = () => {
         fetchData();
     }, []);
     
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    useEffect(() => {
+        const selectedExam = exams.find(e => e.id === selectedExamId);
+        if (selectedExam) {
+            setFormData(prev => ({
+                ...prev,
+                ujian: selectedExam.name,
+                tanggal: selectedExam.startTime ? new Date(selectedExam.startTime).toISOString().split('T')[0] : prev.tanggal,
+            }));
+        }
+    }, [selectedExamId, exams]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
     const handlePrint = () => {
         const styleId = 'printable-page-style';
-        
-        // Remove any old style tag first to avoid conflicts
         const oldStyle = document.getElementById(styleId);
-        if (oldStyle) {
-            oldStyle.remove();
-        }
+        if (oldStyle) oldStyle.remove();
 
-        // Create the new style tag
         const style = document.createElement('style');
         style.id = styleId;
-        
-        // Define the @page rule based on the selected paper size
-        const pageStyle = paperSize === 'f4' 
-            ? 'size: 21.5cm 33cm; margin: 2cm;' 
-            : 'size: A4 portrait; margin: 2cm;';
-
+        const pageStyle = paperSize === 'f4' ? 'size: 21.5cm 33cm; margin: 2cm;' : 'size: A4 portrait; margin: 2cm;';
         style.innerHTML = `@media print { @page { ${pageStyle} } }`;
-
-        // Add the new style to the document's head
         document.head.appendChild(style);
-        
-        // Trigger the browser's print dialog
         window.print();
     };
 
+    const filteredStudents = useMemo(() => {
+        return students.filter(student => student.room === formData.ruang);
+    }, [students, formData.ruang]);
 
     if (isLoading) {
         return <LoadingSpinner text="Memuat daftar siswa..." />;
@@ -78,14 +94,30 @@ const DaftarHadir: React.FC = () => {
 
     return (
         <div>
-            {/* --- FORM INPUT (NO-PRINT) --- */}
             <Card title="Data Daftar Hadir Peserta" className="no-print mb-8">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input label="Mata Ujian" name="ujian" value={formData.ujian} onChange={handleInputChange} placeholder="Asesmen Numerasi Paket 1" />
-                    <Input label="Ruang" name="ruang" value={formData.ruang} onChange={handleInputChange} />
+                    <div>
+                        <label htmlFor="exam-select-hadir" className="block text-sm font-medium text-gray-700 mb-1">Pilih Ujian</label>
+                        <select
+                            id="exam-select-hadir"
+                            value={selectedExamId}
+                            onChange={e => setSelectedExamId(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        >
+                            <option value="">-- Pilih Ujian --</option>
+                            {exams.map(exam => <option key={exam.id} value={exam.id}>{exam.name}</option>)}
+                        </select>
+                    </div>
+                    <Input label="Mata Ujian" name="ujian" value={formData.ujian} onChange={handleInputChange} placeholder="Terisi otomatis setelah memilih ujian" />
+                    <div>
+                         <label htmlFor="ruang" className="block text-sm font-medium text-gray-700 mb-1">Ruang</label>
+                         <select id="ruang" name="ruang" value={formData.ruang} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            {uniqueRooms.map(room => <option key={room} value={room}>{room}</option>)}
+                         </select>
+                    </div>
+                    <Input label="Sesi" name="sesi" value={formData.sesi} onChange={handleInputChange} />
                     <Input label="Hari" name="hari" value={formData.hari} onChange={handleInputChange} placeholder="Selasa" />
                     <Input label="Tanggal" name="tanggal" type="date" value={formData.tanggal} onChange={handleInputChange} />
-                    <Input label="Sesi" name="sesi" value={formData.sesi} onChange={handleInputChange} />
                     <Input label="Nama Pengawas" name="pengawas" value={formData.pengawas} onChange={handleInputChange} />
                 </div>
                 <div className="mt-6 flex items-center justify-end gap-4">
@@ -100,9 +132,7 @@ const DaftarHadir: React.FC = () => {
                 </div>
             </Card>
 
-            {/* --- PRINTABLE DOCUMENT --- */}
             <div className="printable-content bg-white p-8 shadow-lg text-black print:p-0 print:shadow-none print:text-sm">
-                {/* KOP SURAT */}
                 <header className="text-center border-b-4 border-black pb-2">
                     <div className="flex items-center justify-center">
                         <KemenagLogo className="h-20 w-20 mr-4 print:h-16 print:w-16" />
@@ -115,7 +145,6 @@ const DaftarHadir: React.FC = () => {
                     </div>
                 </header>
                 
-                {/* JUDUL & DETAIL */}
                 <section className="text-center mt-8 print:mt-6">
                     <p className="font-bold underline text-lg print:text-base">DAFTAR HADIR PESERTA</p>
                     <p className="font-bold uppercase text-lg print:text-base">{globalSettings?.assessmentTitle || '...'}</p>
@@ -137,7 +166,6 @@ const DaftarHadir: React.FC = () => {
                     </tbody>
                 </table>
                 
-                {/* TABLE DAFTAR HADIR */}
                 <main className="mt-6 text-black print:mt-4">
                     <table className="w-full border-collapse border border-black">
                         <thead className="bg-gray-200 text-center">
@@ -149,7 +177,7 @@ const DaftarHadir: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {students.map((student, index) => (
+                            {filteredStudents.map((student, index) => (
                                 <tr key={student.nis}>
                                     <td className="px-2 py-3 text-center border border-black print:py-1.5">{index + 1}</td>
                                     <td className="px-2 py-3 border border-black print:py-1.5">{student.nis}</td>
@@ -160,11 +188,15 @@ const DaftarHadir: React.FC = () => {
                                     </td>
                                 </tr>
                             ))}
+                             {filteredStudents.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="text-center py-4 border border-black">Tidak ada siswa di ruang ini.</td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </main>
 
-                {/* TANDA TANGAN */}
                 <footer className="mt-8 flex justify-end print:mt-4">
                     <div className="text-center w-1/3">
                         <p>Singkawang, {new Date(formData.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>

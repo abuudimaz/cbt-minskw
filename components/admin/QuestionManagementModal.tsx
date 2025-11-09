@@ -360,6 +360,7 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
     const [error, setError] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+    const [filterType, setFilterType] = useState<QuestionType | 'all'>('all');
 
     const fetchQuestions = useCallback(async () => {
         setIsLoading(true);
@@ -372,7 +373,10 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
     }, [exam.id]);
 
     useEffect(() => {
-        if (isOpen) fetchQuestions();
+        if (isOpen) {
+            fetchQuestions();
+            setFilterType('all'); // Reset filter when modal opens
+        }
         else { setIsFormOpen(false); setEditingQuestion(null); }
     }, [isOpen, fetchQuestions]);
 
@@ -410,20 +414,42 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
         [QuestionType.SURVEY]: 'bg-gray-100 text-gray-800',
     };
 
+    const filteredQuestions = filterType === 'all'
+        ? questions
+        : questions.filter(q => q.type === filterType);
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={isFormOpen ? `Soal untuk ${exam.name}` : `Manajemen Soal: ${exam.name}`} size="xl">
             {isFormOpen ? (
                 <QuestionForm question={editingQuestion} onSave={handleSaveQuestion} onCancel={handleCloseForm} />
             ) : (
                 <>
-                    <div className="mb-4 flex justify-end space-x-2">
-                        <Button onClick={() => handleOpenForm(null)}>+ Tambah Soal Manual</Button>
+                    <div className="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div>
+                            <label htmlFor="question-type-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                                Filter Tipe Soal
+                            </label>
+                            <select
+                                id="question-type-filter"
+                                value={filterType}
+                                onChange={e => setFilterType(e.target.value as QuestionType | 'all')}
+                                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            >
+                                <option value="all">Semua Tipe</option>
+                                {Object.values(QuestionType).filter(t => t !== QuestionType.SURVEY).map(type => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                            <Button onClick={() => handleOpenForm(null)}>+ Tambah Soal Manual</Button>
+                        </div>
                     </div>
                     {isLoading && <LoadingSpinner text="Memuat soal..." />}
                     {error && <p className="text-red-500">{error}</p>}
                     {!isLoading && !error && (
                         <div className="space-y-3">
-                            {questions.length > 0 ? questions.map((q, index) => (
+                            {filteredQuestions.length > 0 ? filteredQuestions.map((q, index) => (
                                 <div key={q.id} className="p-4 border rounded-lg flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3">
@@ -439,7 +465,13 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
                                         <Button size="sm" variant="danger" onClick={() => handleDeleteQuestion(q.id)}>Hapus</Button>
                                     </div>
                                 </div>
-                            )) : <p className="text-center text-gray-500 py-10">Belum ada soal untuk ujian ini. Silakan tambah soal secara manual atau impor dari file.</p>}
+                            )) : (
+                                <p className="text-center text-gray-500 py-10">
+                                    {questions.length > 0 
+                                        ? 'Tidak ada soal yang cocok dengan filter yang dipilih.' 
+                                        : 'Belum ada soal untuk ujian ini. Silakan tambah soal secara manual atau impor dari file.'}
+                                </p>
+                            )}
                         </div>
                     )}
                 </>

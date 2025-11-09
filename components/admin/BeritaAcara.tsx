@@ -3,13 +3,18 @@ import Card from '../shared/Card';
 import Button from '../shared/Button';
 import Input from '../shared/Input';
 import { KemenagLogo } from '../../constants';
-import { apiGetExamSettings } from '../../services/api';
-import { ExamSettings } from '../../types';
+import { apiGetExamSettings, apiGetExams, apiGetExamResults, apiGetStudents } from '../../services/api';
+import { ExamSettings, Exam } from '../../types';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import { toastError } from '../../utils/helpers';
 
 const BeritaAcara: React.FC = () => {
     const [globalSettings, setGlobalSettings] = useState<ExamSettings | null>(null);
+    const [exams, setExams] = useState<Exam[]>([]);
+    const [selectedExamId, setSelectedExamId] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isCalculating, setIsCalculating] = useState(false);
+    
     const [formData, setFormData] = useState({
         hari: '',
         tanggal: new Date().toISOString().split('T')[0],
@@ -26,11 +31,56 @@ const BeritaAcara: React.FC = () => {
     const [paperSize, setPaperSize] = useState<'a4' | 'f4'>('a4');
     
     useEffect(() => {
-        apiGetExamSettings().then(settings => {
-            setGlobalSettings(settings);
-            setIsLoading(false);
-        });
+        const fetchInitialData = async () => {
+            setIsLoading(true);
+            try {
+                const [settings, examsData] = await Promise.all([apiGetExamSettings(), apiGetExams()]);
+                setGlobalSettings(settings);
+                setExams(examsData);
+            } catch (err) {
+                toastError("Gagal memuat data awal.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchInitialData();
     }, []);
+    
+    useEffect(() => {
+        if (!selectedExamId) {
+            setFormData(prev => ({ ...prev, totalPeserta: 0, hadir: 0, ujian: '' }));
+            return;
+        }
+
+        const calculateParticipants = async () => {
+            setIsCalculating(true);
+            try {
+                const selectedExam = exams.find(e => e.id === selectedExamId);
+                if (!selectedExam) return;
+
+                const [allStudents, allResults] = await Promise.all([apiGetStudents(), apiGetExamResults()]);
+                
+                const totalPeserta = allStudents.length;
+                const hadir = allResults.filter(r => r.examId === selectedExamId).length;
+
+                setFormData(prev => ({
+                    ...prev,
+                    ujian: selectedExam.name,
+                    totalPeserta,
+                    hadir,
+                    tanggal: selectedExam.startTime ? new Date(selectedExam.startTime).toISOString().split('T')[0] : prev.tanggal,
+                    waktuMulai: selectedExam.startTime ? new Date(selectedExam.startTime).toTimeString().substring(0, 5) : prev.waktuMulai,
+                    waktuSelesai: selectedExam.endTime ? new Date(selectedExam.endTime).toTimeString().substring(0, 5) : prev.waktuSelesai,
+                }));
+            } catch (err) {
+                toastError("Gagal menghitung data peserta.");
+            } finally {
+                setIsCalculating(false);
+            }
+        };
+        
+        calculateParticipants();
+    }, [selectedExamId, exams]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
@@ -42,28 +92,14 @@ const BeritaAcara: React.FC = () => {
     
     const handlePrint = () => {
         const styleId = 'printable-page-style';
-        
-        // Remove any old style tag first to avoid conflicts if user changes paper size
         const oldStyle = document.getElementById(styleId);
-        if (oldStyle) {
-            oldStyle.remove();
-        }
+        if (oldStyle) oldStyle.remove();
 
-        // Create the new style tag
         const style = document.createElement('style');
         style.id = styleId;
-        
-        // Define the @page rule based on the selected paper size
-        const pageStyle = paperSize === 'f4' 
-            ? 'size: 21.5cm 33cm; margin: 2cm;' 
-            : 'size: A4 portrait; margin: 2cm;';
-            
+        const pageStyle = paperSize === 'f4' ? 'size: 21.5cm 33cm; margin: 2cm;' : 'size: A4 portrait; margin: 2cm;';
         style.innerHTML = `@media print { @page { ${pageStyle} } }`;
-
-        // Add the new style to the document's head
         document.head.appendChild(style);
-        
-        // Trigger the browser's print dialog. The style is not removed prematurely.
         window.print();
     };
 
@@ -75,9 +111,21 @@ const BeritaAcara: React.FC = () => {
 
     return (
         <div>
-            {/* --- FORM INPUT (HIDDEN ON PRINT) --- */}
             <Card title="Data Berita Acara Pelaksanaan" className="no-print mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label htmlFor="exam-select" className="block text-sm font-medium text-gray-700 mb-1">Pilih Ujian (untuk data otomatis)</label>
+                        <select
+                            id="exam-select"
+                            value={selectedExamId}
+                            onChange={e => setSelectedExamId(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        >
+                            <option value="">-- Pilih Ujian --</option>
+                            {exams.map(exam => <option key={exam.id} value={exam.id}>{exam.name}</option>)}
+                        </select>
+                    </div>
+                    <div></div>
                     <Input label="Hari" name="hari" value={formData.hari} onChange={handleInputChange} placeholder="Senin" />
                     <Input label="Tanggal" name="tanggal" type="date" value={formData.tanggal} onChange={handleInputChange} />
                     <Input label="Nama Ujian/Asesmen" name="ujian" value={formData.ujian} onChange={handleInputChange} placeholder="Asesmen Literasi Paket 1" />
@@ -87,10 +135,11 @@ const BeritaAcara: React.FC = () => {
                         <Input label="Waktu Mulai" name="waktuMulai" type="time" value={formData.waktuMulai} onChange={handleInputChange} />
                         <Input label="Waktu Selesai" name="waktuSelesai" type="time" value={formData.waktuSelesai} onChange={handleInputChange} />
                     </div>
-                    <div className="flex gap-4">
-                        <Input label="Total Peserta" name="totalPeserta" type="number" value={formData.totalPeserta} onChange={handleInputChange} />
-                        <Input label="Jumlah Hadir" name="hadir" type="number" value={formData.hadir} onChange={handleInputChange} />
+                     <div className="flex gap-4 items-end">
+                        <Input label="Total Peserta" name="totalPeserta" type="number" value={formData.totalPeserta} readOnly disabled className="bg-gray-100" />
+                        <Input label="Jumlah Hadir" name="hadir" type="number" value={formData.hadir} readOnly disabled className="bg-gray-100" />
                         <Input label="Tidak Hadir" name="tidakHadir" type="number" value={tidakHadir} readOnly disabled className="bg-gray-100" />
+                        {isCalculating && <LoadingSpinner text=""/>}
                     </div>
                      <div>
                         <label htmlFor="catatan" className="block text-sm font-medium text-gray-700 mb-1">Catatan Selama Pelaksanaan</label>
@@ -110,9 +159,7 @@ const BeritaAcara: React.FC = () => {
                 </div>
             </Card>
 
-            {/* --- PRINTABLE DOCUMENT --- */}
             <div className="printable-content bg-white p-8 shadow-lg text-black print:p-0 print:shadow-none print:text-sm">
-                {/* KOP SURAT */}
                 <header className="border-b-4 border-black pb-2 w-full">
                     <table className="w-full">
                         <tbody>
@@ -131,14 +178,12 @@ const BeritaAcara: React.FC = () => {
                     </table>
                 </header>
 
-                {/* JUDUL */}
                 <section className="text-center mt-8 print:mt-6">
                     <p className="font-bold underline text-lg print:text-base">BERITA ACARA PELAKSANAAN</p>
                     <p className="font-bold uppercase text-lg print:text-base">{globalSettings?.assessmentTitle || '...'}</p>
                     <p className="font-bold uppercase text-lg print:text-base">TAHUN PELAJARAN {globalSettings?.academicYear}</p>
                 </section>
 
-                {/* ISI */}
                 <main className="mt-8 text-justify leading-relaxed print:mt-4 print:leading-normal">
                     <p>Pada hari ini, {formData.hari || '[Hari]'}, tanggal {new Date(formData.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}, telah diselenggarakan Asesmen Madrasah Berbasis Komputer untuk mata ujian <strong>{formData.ujian || '[Nama Ujian]'}</strong> dari pukul {formData.waktuMulai} sampai dengan pukul {formData.waktuSelesai} WIB.</p>
                     
@@ -165,7 +210,6 @@ const BeritaAcara: React.FC = () => {
                     <p className="mt-6 print:mt-4">Demikian berita acara ini dibuat dengan sesungguhnya untuk dapat dipergunakan sebagaimana mestinya.</p>
                 </main>
 
-                {/* TANDA TANGAN */}
                 <footer className="mt-12 print:mt-6">
                      <table className="w-full">
                         <tbody>
