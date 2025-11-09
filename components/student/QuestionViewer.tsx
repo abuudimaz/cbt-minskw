@@ -88,7 +88,7 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                                          <input type="checkbox" checked={!!isChecked} readOnly className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3" />
                                     )}
                                     {style === 'toggle' && (
-                                        <div className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full mr-4 border-2 transition-all ${isChecked ? 'bg-blue-600 border-blue-700 text-white' : 'bg-white border-gray-400 text-gray-700'}`}>
+                                        <div className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full mr-4 border-2 transition-all ${isChecked ? 'bg-blue-600 border-blue-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-700'}`}>
                                             {isChecked ? (
                                                 <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

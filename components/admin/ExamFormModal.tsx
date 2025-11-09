@@ -25,7 +25,7 @@ const generateToken = () => {
 const ExamFormModal: React.FC<ExamFormModalProps> = ({ isOpen, onClose, onSave, exam }) => {
     const [formData, setFormData] = useState({
         name: '',
-        type: AssessmentType.LITERASI,
+        type: AssessmentType.BAHASA_INDONESIA,
         duration: 60,
         token: '',
         startTime: '',
@@ -47,7 +47,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({ isOpen, onClose, onSave, 
         } else {
             setFormData({
                 name: '',
-                type: AssessmentType.LITERASI,
+                type: AssessmentType.BAHASA_INDONESIA,
                 duration: 60,
                 token: '',
                 startTime: '',

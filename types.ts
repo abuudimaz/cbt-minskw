@@ -32,12 +32,21 @@ export interface Student {
 }
 
 export enum AssessmentType {
-    LITERASI = "Literasi",
-    NUMERASI = "Numerasi",
-    SAINS = "Sains",
-    SOSIAL = "Sosial",
-    AGAMA = "Agama",
+    AL_QURAN_HADIS = "Al-Qur'an Hadis",
+    AKIDAH_AKHLAK = "Akidah Akhlak",
+    FIKIH = "Fikih",
+    SKI = "Sejarah Kebudayaan Islam",
+    BAHASA_ARAB = "Bahasa Arab",
+    PENDIDIKAN_PANCASILA = "Pendidikan Pancasila",
+    BAHASA_INDONESIA = "Bahasa Indonesia",
+    MATEMATIKA = "Matematika",
+    IPAS = "Ilmu Pengetahuan Alam dan Sosial (IPAS)",
+    PJOK = "Pendidikan Jasmani, Olahraga, dan Kesehatan",
+    SENI_BUDAYA = "Seni Budaya",
+    BAHASA_INGGRIS = "Bahasa Inggris",
+    MUATAN_LOKAL = "Muatan Lokal",
 }
+
 
 export interface Exam {
     id: string;

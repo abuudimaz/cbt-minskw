@@ -189,7 +189,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ exam }) => {
                 />
             )}
 
-            <div className="bg-white shadow-lg rounded-lg p-4 sm:p-6 mt-4">
+            <div className={`bg-white shadow-lg rounded-lg p-4 sm:p-6 mt-4 transition-all ${isCurrentMarked ? 'ring-2 ring-yellow-500' : ''}`}>
                 {currentQuestion && examSettings && (
                     <QuestionViewer 
                         question={currentQuestion}
