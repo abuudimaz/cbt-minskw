@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserGroupIcon, BookOpenIcon, ComputerDesktopIcon, ChartBarIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, UserCircleIcon, DocumentTextIcon, ClipboardDocumentListIcon, Cog6ToothIcon, CalendarDaysIcon, DocumentChartBarIcon } from './AdminIcons';
+import { UserGroupIcon, BookOpenIcon, ComputerDesktopIcon, ChartBarIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, UserCircleIcon, DocumentTextIcon, ClipboardDocumentListIcon, Cog6ToothIcon, CalendarDaysIcon, DocumentChartBarIcon, ClipboardUserIcon } from './AdminIcons';
 import { AdminTab } from './AdminDashboard';
 
 interface AdminSidebarProps {
@@ -9,7 +9,6 @@ interface AdminSidebarProps {
     setIsCollapsed: (isCollapsed: boolean) => void;
 }
 
-// Store component types (functions) instead of rendered elements (<Component />)
 const tabs: { id: AdminTab; label: string; icon: React.ComponentType }[] = [
     { id: 'monitoring', label: 'Status Ujian', icon: ComputerDesktopIcon },
     { id: 'exams', label: 'Manajemen Soal', icon: BookOpenIcon },
@@ -17,6 +16,7 @@ const tabs: { id: AdminTab; label: string; icon: React.ComponentType }[] = [
     { id: 'students', label: 'Manajemen Siswa', icon: UserGroupIcon },
     { id: 'results', label: 'Hasil Ujian', icon: ChartBarIcon },
     { id: 'reports', label: 'Laporan', icon: DocumentChartBarIcon },
+    { id: 'studentAttendance', label: 'Absensi Siswa', icon: ClipboardUserIcon },
     { id: 'beritaAcara', label: 'Berita Acara', icon: DocumentTextIcon },
     { id: 'daftarHadir', label: 'Daftar Hadir', icon: ClipboardDocumentListIcon },
     { id: 'settings', label: 'Pengaturan Ujian', icon: Cog6ToothIcon },
@@ -37,7 +37,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, is
 
             <nav className="flex-grow mt-5">
                 {tabs.map((tab) => {
-                    // Assign the component type to a capitalized variable for JSX
                     const IconComponent = tab.icon;
                     return (
                         <button
@@ -54,7 +53,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, is
                             <IconComponent />
                             {!isCollapsed && <span className="ml-4">{tab.label}</span>}
                             
-                            {/* Custom Tooltip for collapsed state */}
                             {isCollapsed && (
                                 <span className="absolute left-full ml-4 items-center rounded-md bg-gray-800 px-2 py-1 text-xs font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 whitespace-nowrap z-20 pointer-events-none">
                                     {tab.label}

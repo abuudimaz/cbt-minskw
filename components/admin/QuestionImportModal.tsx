@@ -43,7 +43,6 @@ const QuestionImportModal: React.FC<QuestionImportModalProps> = ({ isOpen, onClo
                 }
 
                 const parsedQuestions = dataRows.map((row, index) => {
-                    // Access data by column index, not by header text.
                     const questionText = row[0];
                     if (!questionText) {
                         throw new Error(`Baris ${index + 2}: Kolom A (Teks Pertanyaan) tidak boleh kosong.`);
@@ -62,7 +61,13 @@ const QuestionImportModal: React.FC<QuestionImportModalProps> = ({ isOpen, onClo
                     const optionD_Text = String(row[9] || '');
                     const optionD_Img = row[10] || undefined;
 
-                    const correctKey = String(row[11] || '').toUpperCase();
+                    const correctKeyRaw = row[11];
+                    const correctKeyTrimmed = String(correctKeyRaw || '').trim();
+
+                    // --- VALIDATION ---
+                    if ((questionType === QuestionType.SINGLE_CHOICE || questionType === QuestionType.MULTIPLE_CHOICE_COMPLEX || questionType === QuestionType.SHORT_ANSWER) && !correctKeyTrimmed) {
+                        throw new Error(`Baris ${index + 2}: Kolom L (Kunci Jawaban) wajib diisi untuk tipe soal "${questionType}".`);
+                    }
 
                     const options = [
                         { id: 'opt1', text: optionA_Text, optionImageUrl: optionA_Img },
@@ -74,7 +79,7 @@ const QuestionImportModal: React.FC<QuestionImportModalProps> = ({ isOpen, onClo
                     let correctAnswer: string | string[] | undefined;
 
                     if (questionType === QuestionType.MULTIPLE_CHOICE_COMPLEX) {
-                        correctAnswer = correctKey.split(',').map(key => {
+                        correctAnswer = correctKeyTrimmed.toUpperCase().split(',').map(key => {
                             switch (key.trim()) {
                                 case 'A': return 'opt1';
                                 case 'B': return 'opt2';
@@ -83,16 +88,21 @@ const QuestionImportModal: React.FC<QuestionImportModalProps> = ({ isOpen, onClo
                                 default: return null;
                             }
                         }).filter(Boolean) as string[];
+                         if (correctAnswer.length === 0) {
+                            throw new Error(`Baris ${index + 2}: Kunci Jawaban "${correctKeyRaw}" tidak valid untuk PG Kompleks. Gunakan format 'A,C'.`);
+                        }
                     } else if (questionType === QuestionType.SINGLE_CHOICE) {
-                        switch (correctKey) {
+                        switch (correctKeyTrimmed.toUpperCase()) {
                             case 'A': correctAnswer = 'opt1'; break;
                             case 'B': correctAnswer = 'opt2'; break;
                             case 'C': correctAnswer = 'opt3'; break;
                             case 'D': correctAnswer = 'opt4'; break;
+                            default:
+                                throw new Error(`Baris ${index + 2}: Kunci Jawaban "${correctKeyRaw}" tidak valid. Gunakan 'A', 'B', 'C', atau 'D'.`);
                         }
                     } else {
-                        // For Short Answer, use the key directly (but not in upper case).
-                        correctAnswer = String(row[11] || '');
+                        // For Short Answer, use the key directly.
+                        correctAnswer = String(correctKeyRaw || '');
                     }
                     
                     return { questionText, questionImageUrl, type: questionType, options, correctAnswer };

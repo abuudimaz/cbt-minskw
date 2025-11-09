@@ -197,7 +197,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
             <Card title="Manajemen Data Siswa">
                 <div className="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                      <div>
-                        <label htmlFor="class-filter" className="sr-only">Filter Berdasarkan Kelas</label>
+                        <label htmlFor="class-filter" className="block text-sm font-medium text-gray-700 mb-1">Filter Berdasarkan Kelas</label>
                         <select 
                             id="class-filter"
                             value={selectedClass} 
@@ -234,7 +234,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIS</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Ruang</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruang</th>
                                 <th className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
                             </tr>
                         </thead>
@@ -253,7 +253,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
                                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-700">{student.nis}</td>
                                     <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{student.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.class}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{student.room}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.room}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                         <Button size="sm" variant="secondary" onClick={() => handleOpenFormModal(student)}>Edit</Button>
                                         <Button size="sm" variant="danger" onClick={() => handleDeleteStudent(student.nis, student.name)}>Hapus</Button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExamResult, Submission, Question, QuestionType, Answer } from '../../types';
+import { ExamResult, Submission, Question, QuestionType, Answer, QuestionOption } from '../../types';
 import { apiGetSubmission, apiGetQuestionsForExam, apiUpdateExamResult } from '../../services/api';
 import Modal from '../shared/Modal';
 import Button from '../shared/Button';
@@ -78,7 +78,7 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
         });
     };
 
-    const renderAnswer = (question: Question, answer: Answer | undefined) => {
+    const renderNonChoiceAnswer = (question: Question, answer: Answer | undefined) => {
         const value = answer?.value;
 
         if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
@@ -86,15 +86,6 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
         }
         
         switch (question.type) {
-            case QuestionType.SINGLE_CHOICE: {
-                const selectedOption = question.options?.find(opt => opt.id === value);
-                return <p>{selectedOption?.text || 'Jawaban tidak valid'}</p>;
-            }
-            case QuestionType.MULTIPLE_CHOICE_COMPLEX: {
-                const selectedOptions = question.options?.filter(opt => (value as string[]).includes(opt.id));
-                if (!selectedOptions || selectedOptions.length === 0) return <p className="text-gray-500 italic">Tidak dijawab</p>;
-                return <ul className="list-disc list-inside">{selectedOptions.map(opt => <li key={opt.id}>{opt.text}</li>)}</ul>;
-            }
             case QuestionType.MATCHING: {
                 const answerMap = value as Record<string, string>;
                 return (
@@ -114,10 +105,20 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
                 return <p className="p-2 bg-gray-50 border rounded-md whitespace-pre-wrap">{value}</p>;
 
             default:
+                 // Fallback for choice questions when called from renderCorrectAnswer
+                if (question.type === QuestionType.SINGLE_CHOICE) {
+                    const selectedOption = question.options?.find(opt => opt.id === value);
+                    return <p>{selectedOption?.text || 'Jawaban tidak valid'}</p>;
+                }
+                if (question.type === QuestionType.MULTIPLE_CHOICE_COMPLEX) {
+                    const selectedOptions = question.options?.filter(opt => (value as string[]).includes(opt.id));
+                    if (!selectedOptions || selectedOptions.length === 0) return <p className="text-gray-500 italic">Tidak dijawab</p>;
+                    return <ul className="list-disc list-inside">{selectedOptions.map(opt => <li key={opt.id}>{opt.text}</li>)}</ul>;
+                }
                 return <p className="text-gray-700">{JSON.stringify(value)}</p>;
         }
     };
-
+    
     const renderCorrectAnswer = (question: Question) => {
         const correctAnswer = question.correctAnswer;
         if (correctAnswer === undefined || correctAnswer === null || (Array.isArray(correctAnswer) && correctAnswer.length === 0)) {
@@ -127,7 +128,7 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
              return null;
         }
         const answerForRenderer: Answer | undefined = { questionId: question.id, value: correctAnswer };
-        return renderAnswer(question, answerForRenderer);
+        return renderNonChoiceAnswer(question, answerForRenderer);
     };
 
     const isAnswerCorrect = (question: Question, answer: Answer | undefined): boolean | null => {
@@ -167,22 +168,74 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
                                             </Button>
                                         )}
                                     </div>
-                                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                                        <div>
-                                            <h4 className="text-sm font-bold text-gray-600 mb-1 flex items-center">
-                                                Jawaban Siswa: 
-                                                {isCorrect === true && <span className="ml-2 text-green-600">✅ Benar</span>}
-                                                {isCorrect === false && <span className="ml-2 text-red-600">❌ Salah</span>}
-                                            </h4>
-                                            {renderAnswer(q, studentAnswer)}
+                                    
+                                    {(q.type === QuestionType.SINGLE_CHOICE || q.type === QuestionType.MULTIPLE_CHOICE_COMPLEX) ? (
+                                        <div className="mt-3 space-y-2">
+                                            {q.options?.map((opt, optIndex) => {
+                                                const studentValue = studentAnswer?.value;
+                                                const correctAnswerValue = q.correctAnswer;
+
+                                                const isSelectedByStudent = Array.isArray(studentValue)
+                                                    ? studentValue.includes(opt.id)
+                                                    : studentValue === opt.id;
+                                                
+                                                const isCorrectAnswer = Array.isArray(correctAnswerValue)
+                                                    ? correctAnswerValue.includes(opt.id)
+                                                    : correctAnswerValue === opt.id;
+                                                
+                                                let optionClasses = "p-3 border rounded-lg flex items-start text-gray-800 text-sm transition-colors";
+                                                const badges = [];
+
+                                                if (isSelectedByStudent) {
+                                                    if (isKeyVisible) {
+                                                        if (isCorrectAnswer) {
+                                                            optionClasses += " bg-green-100 border-green-500 ring-2 ring-green-500";
+                                                            badges.push(<span key="correct-student" className="text-xs font-semibold text-green-800">[Jawaban Siswa - Benar]</span>);
+                                                        } else {
+                                                            optionClasses += " bg-red-100 border-red-500";
+                                                            badges.push(<span key="student-wrong" className="text-xs font-semibold text-red-800">[Jawaban Siswa]</span>);
+                                                        }
+                                                    } else {
+                                                        optionClasses += " bg-blue-100 border-blue-500 ring-2 ring-blue-500";
+                                                        badges.push(<span key="student" className="text-xs font-semibold text-blue-800">[Jawaban Siswa]</span>);
+                                                    }
+                                                } else if (isKeyVisible && isCorrectAnswer) {
+                                                    optionClasses += " bg-green-100 border-green-500";
+                                                    badges.push(<span key="correct" className="text-xs font-semibold text-green-800">[Kunci Jawaban]</span>);
+                                                } else {
+                                                    optionClasses += " bg-gray-50 border-gray-200";
+                                                }
+
+                                                return (
+                                                    <div key={opt.id} className={optionClasses}>
+                                                        <span className="font-bold mr-3">{String.fromCharCode(65 + optIndex)}.</span>
+                                                        <div className="flex-1">
+                                                            <p>{opt.text}</p>
+                                                            {opt.optionImageUrl && <img src={opt.optionImageUrl} alt={`Opsi ${optIndex + 1}`} className="mt-2 rounded-md max-h-48" />}
+                                                        </div>
+                                                        <div className="ml-4 flex-shrink-0">{badges}</div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                        {isKeyVisible && (
-                                            <div className="bg-green-50 p-2 rounded-md border border-green-200">
-                                                <h4 className="text-sm font-bold text-green-700 mb-1">Kunci Jawaban:</h4>
-                                                {renderCorrectAnswer(q)}
+                                    ) : (
+                                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                            <div>
+                                                <h4 className="text-sm font-bold text-gray-600 mb-1 flex items-center">
+                                                    Jawaban Siswa: 
+                                                    {isCorrect === true && <span className="ml-2 text-green-600">✅ Benar</span>}
+                                                    {isCorrect === false && <span className="ml-2 text-red-600">❌ Salah</span>}
+                                                </h4>
+                                                {renderNonChoiceAnswer(q, studentAnswer)}
                                             </div>
-                                        )}
-                                    </div>
+                                            {isKeyVisible && (
+                                                <div className="bg-green-50 p-2 rounded-md border border-green-200">
+                                                    <h4 className="text-sm font-bold text-green-700 mb-1">Kunci Jawaban:</h4>
+                                                    {renderCorrectAnswer(q)}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}

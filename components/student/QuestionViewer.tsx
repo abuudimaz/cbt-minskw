@@ -10,10 +10,15 @@ interface QuestionViewerProps {
 }
 
 const TextWithArabic: React.FC<{ text: string }> = ({ text }) => {
+    // This regex helps identify if there are any Arabic characters in the text.
     const arabicRegex = /[\u0600-\u06FF]/;
     const containsArabic = arabicRegex.test(text);
 
-    // For any text containing Arabic, apply Amiri font, auto-direction, and RTL alignment.
+    // For any text containing Arabic characters, we wrap it in a span that handles
+    // bidirectional text automatically (`dir="auto"`). The browser will correctly
+    // set the direction to right-to-left (RTL). We also apply specific styling
+    // for RTL text to ensure it's right-aligned, and use the Amiri font for
+    // better readability of Arabic script.
     if (containsArabic) {
         return (
             <span dir="auto" className="font-amiri text-xl block rtl:text-right">
@@ -22,8 +27,8 @@ const TextWithArabic: React.FC<{ text: string }> = ({ text }) => {
         );
     }
 
-    // For non-Arabic text, just apply the consistent font size.
-    // No special direction or font family needed; it will inherit Poppins.
+    // For text without Arabic characters, we render it normally with a consistent
+    // font size, inheriting the default Poppins font.
     return <span className="text-xl">{text}</span>;
 };
 
@@ -88,7 +93,7 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                                          <input type="checkbox" checked={!!isChecked} readOnly className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3" />
                                     )}
                                     {style === 'toggle' && (
-                                        <div className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full mr-4 border-2 transition-all ${isChecked ? 'bg-blue-600 border-blue-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-700'}`}>
+                                        <div className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full mr-4 border-2 transition-all ${isChecked ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-400 text-gray-600'}`}>
                                             {isChecked ? (
                                                 <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -149,6 +154,7 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                         placeholder="Ketik jawaban singkat Anda di sini..."
                         value={selectedAnswer || ''}
                         onChange={e => onSelectAnswer(question.id, e.target.value)}
+                        className="py-3 text-lg"
                     />
                 );
 
@@ -156,7 +162,7 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                 return (
                     <textarea
                         placeholder="Ketik jawaban uraian Anda di sini..."
-                        rows={6}
+                        rows={8}
                         value={selectedAnswer || ''}
                         onChange={e => onSelectAnswer(question.id, e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"

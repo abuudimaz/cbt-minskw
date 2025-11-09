@@ -11,9 +11,10 @@ import ExamSettings from './ExamSettings';
 import ExamSchedule from './ExamSchedule';
 import GlobalSearch from './GlobalSearch';
 import ReportDashboard from './ReportDashboard';
+import StudentAttendance from './StudentAttendance';
 import { Student, Exam, ExamResult } from '../../types';
 
-export type AdminTab = 'monitoring' | 'exams' | 'examSchedule' | 'students' | 'results' | 'reports' | 'beritaAcara' | 'daftarHadir' | 'settings' | 'profile';
+export type AdminTab = 'monitoring' | 'exams' | 'examSchedule' | 'students' | 'results' | 'reports' | 'studentAttendance' | 'beritaAcara' | 'daftarHadir' | 'settings' | 'profile';
 
 interface AdminComponentProps {
     searchQuery?: string;
@@ -28,6 +29,7 @@ const componentMap: { [key in AdminTab]: React.ComponentType<AdminComponentProps
     students: StudentManagement,
     results: ResultsDashboard,
     reports: ReportDashboard,
+    studentAttendance: StudentAttendance,
     beritaAcara: BeritaAcara,
     daftarHadir: DaftarHadir,
     settings: ExamSettings,

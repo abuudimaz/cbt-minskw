@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ExamResult } from '../../types';
 import { apiGetExamResults } from '../../services/api';
 import Card from '../shared/Card';
@@ -21,6 +21,9 @@ interface ClassReport {
 
 const ReportDashboard: React.FC = () => {
     const [reportData, setReportData] = useState<ClassReport[]>([]);
+    const [allClasses, setAllClasses] = useState<string[]>([]);
+    const [selectedClass, setSelectedClass] = useState<string>('all');
+    const [selectedExamName, setSelectedExamName] = useState<string>('all');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -69,6 +72,9 @@ const ReportDashboard: React.FC = () => {
                 }).sort((a, b) => a.className.localeCompare(b.className)); // Sort classes alphabetically
 
                 setReportData(finalReport);
+                const uniqueClasses = finalReport.map(report => report.className).sort();
+                setAllClasses(uniqueClasses);
+
             } catch (err) {
                 setError('Gagal menghasilkan laporan.');
             } finally {
@@ -78,6 +84,16 @@ const ReportDashboard: React.FC = () => {
 
         generateReport();
     }, []);
+
+    const allExamNames = useMemo(() => {
+        const examSet = new Set<string>();
+        reportData.forEach(classReport => {
+            classReport.examSummaries.forEach(summary => {
+                examSet.add(summary.examName);
+            });
+        });
+        return Array.from(examSet).sort();
+    }, [reportData]);
 
     const handlePrint = () => {
         window.print();
@@ -104,16 +120,56 @@ const ReportDashboard: React.FC = () => {
     if (isLoading) return <LoadingSpinner text="Menghasilkan Laporan..." />;
     if (error) return <p className="text-red-500 text-center">{error}</p>;
 
+    const filteredReportData = reportData
+        .filter(report => selectedClass === 'all' || report.className === selectedClass)
+        .map(classReport => ({
+            ...classReport,
+            examSummaries: classReport.examSummaries.filter(
+                summary => selectedExamName === 'all' || summary.examName === selectedExamName
+            ),
+        }))
+        .filter(classReport => classReport.examSummaries.length > 0);
+
     return (
         <div>
              <Card title="Laporan Hasil Ujian per Kelas">
-                <div className="flex justify-end mb-4 no-print">
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-4 no-print gap-4">
+                    <div className="flex flex-wrap gap-4">
+                        <div>
+                            <label htmlFor="class-filter-report" className="block text-sm font-medium text-gray-700 mb-1">Filter Berdasarkan Kelas</label>
+                            <select
+                                id="class-filter-report"
+                                value={selectedClass}
+                                onChange={(e) => setSelectedClass(e.target.value)}
+                                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            >
+                                <option value="all">Semua Kelas</option>
+                                {allClasses.map(cls => (
+                                    <option key={cls} value={cls}>{cls}</option>
+                                ))}
+                            </select>
+                        </div>
+                         <div>
+                            <label htmlFor="exam-filter-report" className="block text-sm font-medium text-gray-700 mb-1">Filter Berdasarkan Ujian</label>
+                            <select
+                                id="exam-filter-report"
+                                value={selectedExamName}
+                                onChange={(e) => setSelectedExamName(e.target.value)}
+                                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            >
+                                <option value="all">Semua Ujian</option>
+                                {allExamNames.map(name => (
+                                    <option key={name} value={name}>{name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                     <Button onClick={handlePrint}>Cetak Laporan</Button>
                 </div>
                 
                 <div className="printable-content space-y-8">
-                    {reportData.length > 0 ? (
-                        reportData.map(({ className, examSummaries }) => (
+                    {filteredReportData.length > 0 ? (
+                        filteredReportData.map(({ className, examSummaries }) => (
                             <div key={className}>
                                 <h2 className="text-xl font-bold text-gray-800 mb-3 border-b-2 pb-2 border-gray-200">
                                     Kelas: {className}
@@ -155,8 +211,8 @@ const ReportDashboard: React.FC = () => {
                             </div>
                         ))
                     ) : (
-                        <p className="text-center text-gray-500 py-10">
-                            Tidak ada data hasil ujian yang dapat ditampilkan untuk membuat laporan.
+                         <p className="text-center text-gray-500 py-10">
+                            {reportData.length > 0 ? `Tidak ada data laporan yang cocok dengan filter yang dipilih.` : 'Tidak ada data hasil ujian yang dapat ditampilkan untuk membuat laporan.'}
                         </p>
                     )}
                 </div>
