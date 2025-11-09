@@ -13,31 +13,18 @@ const TextWithArabic: React.FC<{ text: string }> = ({ text }) => {
     const arabicRegex = /[\u0600-\u06FF]/;
     const containsArabic = arabicRegex.test(text);
 
-    if (!containsArabic) {
-        // For non-Arabic text, render it without special styling to use the default Poppins font.
-        return <>{text}</>;
+    // For any text containing Arabic, apply Amiri font, auto-direction, and RTL alignment.
+    if (containsArabic) {
+        return (
+            <span dir="auto" className="font-amiri text-xl block rtl:text-right">
+                {text}
+            </span>
+        );
     }
-    
-    // Refined logic for mixed content:
-    // The parent span sets the overall block direction (`dir="auto"`) and alignment (`rtl:text-right`).
-    // This allows the browser to correctly handle the flow of mixed LTR and RTL text.
-    return (
-        <span dir="auto" className="text-xl block rtl:text-right">
-            {
-                // Split the string by capturing Arabic segments (including spaces and common punctuation).
-                // This creates an array of alternating non-Arabic and Arabic parts.
-                text.split(/([\u0600-\u06FF\s\p{P}]+)/u).filter(Boolean).map((part, index) => {
-                    // Test if the current part is an Arabic segment.
-                    if (arabicRegex.test(part)) {
-                        // Apply the special Amiri font only to the Arabic parts.
-                        return <span key={index} className="font-amiri">{part}</span>;
-                    }
-                    // Render non-Arabic parts with the default font (Poppins).
-                    return <span key={index}>{part}</span>;
-                })
-            }
-        </span>
-    );
+
+    // For non-Arabic text, just apply the consistent font size.
+    // No special direction or font family needed; it will inherit Poppins.
+    return <span className="text-xl">{text}</span>;
 };
 
 
@@ -88,7 +75,7 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                     <div className="space-y-3">
                          {question.options?.map((option, index) => {
                             const isChecked = selectedAnswer?.includes(option.id);
-                            const baseClasses = "p-4 border rounded-lg cursor-pointer transition-colors flex items-start";
+                            const baseClasses = "p-4 border rounded-lg cursor-pointer transition-colors flex items-center";
                             const selectedClasses = "border-blue-500 bg-blue-50 ring-2 ring-blue-500";
                             const unselectedClasses = "border-gray-300 hover:bg-gray-100";
 
@@ -98,10 +85,18 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                                      className={`${baseClasses} ${isChecked ? selectedClasses : unselectedClasses}`}
                                 >
                                     {style === 'checkbox' && (
-                                         <input type="checkbox" checked={!!isChecked} readOnly className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3 mt-1" />
+                                         <input type="checkbox" checked={!!isChecked} readOnly className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3" />
                                     )}
                                     {style === 'toggle' && (
-                                         <span className={`font-bold mr-3`}>{String.fromCharCode(65 + index)}.</span>
+                                        <div className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full mr-4 border-2 transition-all ${isChecked ? 'bg-blue-600 border-blue-700 text-white' : 'bg-white border-gray-400 text-gray-700'}`}>
+                                            {isChecked ? (
+                                                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            ) : (
+                                                <span className="text-sm font-bold">{String.fromCharCode(65 + index)}</span>
+                                            )}
+                                        </div>
                                     )}
                                     <div className="flex-1">
                                         <TextWithArabic text={option.text} />

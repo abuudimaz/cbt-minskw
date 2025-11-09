@@ -32,6 +32,27 @@
         }
       }
     </script>
+    
+    <!-- Custom Print Styles -->
+    <style>
+      @media print {
+        /* Hide all elements marked with .no-print */
+        .no-print, .no-print * {
+          display: none !important;
+        }
+        /* Ensure the body has a white background for printing */
+        body {
+          background-color: #fff;
+        }
+        /* Reset styles for the printable area to ensure it fills the page */
+        .printable-content {
+          box-shadow: none !important;
+          border: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+      }
+    </style>
 
     <!-- SheetJS for Excel Import -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

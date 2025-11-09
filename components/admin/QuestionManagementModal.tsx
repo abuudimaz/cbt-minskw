@@ -65,7 +65,7 @@ const QuestionForm: React.FC<{
             }
         }
         
-        if (formData.type === QuestionType.SHORT_ANSWER && !formData.correctAnswer) {
+        if (formData.type === QuestionType.SHORT_ANSWER && (!formData.correctAnswer || !formData.correctAnswer.trim())) {
              newErrors.correctAnswer = "Kunci jawaban untuk isian singkat tidak boleh kosong.";
         }
 
@@ -319,13 +319,24 @@ const QuestionForm: React.FC<{
                         ))}
                     </select>
                 </div>
+                 {formData.type === QuestionType.SHORT_ANSWER && (
+                    <div className="pt-2">
+                        <Input 
+                            label="Jawaban Benar" 
+                            value={formData.correctAnswer || ''} 
+                            onChange={e => setFormData(prev => ({...prev, correctAnswer: e.target.value}))} 
+                            required 
+                            placeholder="Masukkan kunci jawaban..."
+                        />
+                         {errors.correctAnswer && <p className="text-sm text-red-500 mt-1">{errors.correctAnswer}</p>}
+                    </div>
+                )}
             </div>
 
             {/* Answer Fields */}
             <div className="mt-6">
                 {(formData.type === QuestionType.SINGLE_CHOICE || formData.type === QuestionType.MULTIPLE_CHOICE_COMPLEX) && renderChoiceAnswerFields()}
                 {formData.type === QuestionType.MATCHING && renderMatchingAnswerFields()}
-                {formData.type === QuestionType.SHORT_ANSWER && <Input label="Jawaban Benar" value={formData.correctAnswer || ''} onChange={e => setFormData(prev => ({...prev, correctAnswer: e.target.value}))} />}
             </div>
 
              <div className="flex justify-end space-x-2 pt-4 border-t">
@@ -400,42 +411,40 @@ const QuestionManagementModal: React.FC<QuestionManagementModalProps> = ({ isOpe
     };
 
     return (
-        <>
-            <Modal isOpen={isOpen} onClose={onClose} title={isFormOpen ? `Soal untuk ${exam.name}` : `Manajemen Soal: ${exam.name}`} size="xl">
-                {isFormOpen ? (
-                    <QuestionForm question={editingQuestion} onSave={handleSaveQuestion} onCancel={handleCloseForm} />
-                ) : (
-                    <>
-                        <div className="mb-4 flex justify-end space-x-2">
-                            <Button onClick={() => handleOpenForm(null)}>+ Tambah Soal Manual</Button>
-                        </div>
-                        {isLoading && <LoadingSpinner text="Memuat soal..." />}
-                        {error && <p className="text-red-500">{error}</p>}
-                        {!isLoading && !error && (
-                            <div className="space-y-3">
-                                {questions.length > 0 ? questions.map((q, index) => (
-                                    <div key={q.id} className="p-4 border rounded-lg flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-3">
-                                                <span className="font-bold text-gray-700">{index + 1}.</span>
-                                                <p className="font-medium text-gray-800 truncate" title={q.questionText}>{q.questionText}</p>
-                                            </div>
-                                            <div className="mt-2">
-                                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${typeColorMap[q.type]}`}>{q.type}</span>
-                                            </div>
+        <Modal isOpen={isOpen} onClose={onClose} title={isFormOpen ? `Soal untuk ${exam.name}` : `Manajemen Soal: ${exam.name}`} size="xl">
+            {isFormOpen ? (
+                <QuestionForm question={editingQuestion} onSave={handleSaveQuestion} onCancel={handleCloseForm} />
+            ) : (
+                <>
+                    <div className="mb-4 flex justify-end space-x-2">
+                        <Button onClick={() => handleOpenForm(null)}>+ Tambah Soal Manual</Button>
+                    </div>
+                    {isLoading && <LoadingSpinner text="Memuat soal..." />}
+                    {error && <p className="text-red-500">{error}</p>}
+                    {!isLoading && !error && (
+                        <div className="space-y-3">
+                            {questions.length > 0 ? questions.map((q, index) => (
+                                <div key={q.id} className="p-4 border rounded-lg flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-bold text-gray-700">{index + 1}.</span>
+                                            <p className="font-medium text-gray-800 truncate" title={q.questionText}>{q.questionText}</p>
                                         </div>
-                                        <div className="space-x-2 flex-shrink-0 ml-4">
-                                            <Button size="sm" variant="secondary" onClick={() => handleOpenForm(q)}>Edit</Button>
-                                            <Button size="sm" variant="danger" onClick={() => handleDeleteQuestion(q.id)}>Hapus</Button>
+                                        <div className="mt-2">
+                                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${typeColorMap[q.type]}`}>{q.type}</span>
                                         </div>
                                     </div>
-                                )) : <p className="text-center text-gray-500 py-10">Belum ada soal untuk ujian ini. Silakan tambah soal secara manual atau impor dari file.</p>}
-                            </div>
-                        )}
-                    </>
-                )}
-            </Modal>
-        </>
+                                    <div className="space-x-2 flex-shrink-0 ml-4">
+                                        <Button size="sm" variant="secondary" onClick={() => handleOpenForm(q)}>Edit</Button>
+                                        <Button size="sm" variant="danger" onClick={() => handleDeleteQuestion(q.id)}>Hapus</Button>
+                                    </div>
+                                </div>
+                            )) : <p className="text-center text-gray-500 py-10">Belum ada soal untuk ujian ini. Silakan tambah soal secara manual atau impor dari file.</p>}
+                        </div>
+                    )}
+                </>
+            )}
+        </Modal>
     );
 };
 

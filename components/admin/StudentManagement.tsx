@@ -176,7 +176,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
             .map(({ nis, name, class: studentClass, room }) => ({ nis, name, class: studentClass, room })); 
         
         if (dataToExport.length > 0) {
-            downloadCSV(dataToExport, `export_siswa_${new Date().toISOString().split('T')[0]}.csv`);
+            downloadCSV(dataToExport, `export_siswa_terpilih_${new Date().toISOString().split('T')[0]}.csv`);
         } else {
             toastError("Tidak ada siswa terpilih untuk diekspor.");
         }
@@ -190,20 +190,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
     return (
         <>
             <Card title="Manajemen Data Siswa">
-                <div className="mb-4 flex justify-between items-center">
-                    <div className="flex-1">
-                        {selectedStudents.size > 0 && (
-                            <div className="flex items-center space-x-2 bg-gray-100 p-2 rounded-md">
-                                <span className="text-sm font-semibold text-gray-700">{selectedStudents.size} terpilih</span>
-                                <Button onClick={handleDeleteSelected} variant="danger" size="sm">
-                                    Hapus
-                                </Button>
-                                <Button onClick={handleExportSelected} variant="secondary" size="sm">
-                                    Export CSV
-                                </Button>
-                            </div>
-                        )}
-                    </div>
+                <div className="mb-4 flex justify-end">
                     <div className="flex space-x-2">
                         <Button onClick={() => setIsImportModalOpen(true)} variant="secondary">
                             Import Siswa
@@ -230,7 +217,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIS</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Lengkap</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruang</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Ruang</th>
                                 <th className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
                             </tr>
                         </thead>
@@ -249,7 +236,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
                                     <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-700">{student.nis}</td>
                                     <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{student.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.class}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.room}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{student.room}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                         <Button size="sm" variant="secondary" onClick={() => handleOpenFormModal(student)}>Edit</Button>
                                         <Button size="sm" variant="danger" onClick={() => handleDeleteStudent(student.nis, student.name)}>Hapus</Button>
@@ -265,6 +252,24 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
                         </tbody>
                     </table>
                 </div>
+
+                <div className="mt-4 border-t pt-4">
+                    <h3 className="font-semibold text-gray-800 mb-2">Aksi Massal</h3>
+                    {selectedStudents.size > 0 ? (
+                        <div className="flex items-center space-x-3 bg-gray-50 p-3 rounded-md">
+                            <span className="text-sm font-semibold text-gray-700">{selectedStudents.size} siswa terpilih</span>
+                            <Button onClick={handleDeleteSelected} variant="danger" size="sm">
+                                Hapus Terpilih
+                            </Button>
+                            <Button onClick={handleExportSelected} variant="secondary" size="sm">
+                                Export Terpilih (CSV)
+                            </Button>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-gray-500">Pilih siswa menggunakan checkbox untuk melakukan aksi massal.</p>
+                    )}
+                </div>
+
             </Card>
 
             <StudentFormModal

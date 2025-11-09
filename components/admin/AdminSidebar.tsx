@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserGroupIcon, BookOpenIcon, ComputerDesktopIcon, ChartBarIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, UserCircleIcon, DocumentTextIcon, ClipboardDocumentListIcon, Cog6ToothIcon, CalendarDaysIcon } from './AdminIcons';
+import { UserGroupIcon, BookOpenIcon, ComputerDesktopIcon, ChartBarIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, UserCircleIcon, DocumentTextIcon, ClipboardDocumentListIcon, Cog6ToothIcon, CalendarDaysIcon, DocumentChartBarIcon } from './AdminIcons';
 import { AdminTab } from './AdminDashboard';
 
 interface AdminSidebarProps {
@@ -16,6 +16,7 @@ const tabs: { id: AdminTab; label: string; icon: React.ComponentType }[] = [
     { id: 'examSchedule', label: 'Jadwal Ujian', icon: CalendarDaysIcon },
     { id: 'students', label: 'Manajemen Siswa', icon: UserGroupIcon },
     { id: 'results', label: 'Hasil Ujian', icon: ChartBarIcon },
+    { id: 'reports', label: 'Laporan', icon: DocumentChartBarIcon },
     { id: 'beritaAcara', label: 'Berita Acara', icon: DocumentTextIcon },
     { id: 'daftarHadir', label: 'Daftar Hadir', icon: ClipboardDocumentListIcon },
     { id: 'settings', label: 'Pengaturan Ujian', icon: Cog6ToothIcon },
