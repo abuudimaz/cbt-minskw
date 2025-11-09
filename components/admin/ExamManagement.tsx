@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Exam, Question } from '../../types';
 import { apiGetExams, apiCreateExam, apiUpdateExam, apiDeleteExam, apiImportQuestions, apiUpdateExamsOrder } from '../../services/api';
 import Button from '../shared/Button';
@@ -9,7 +9,11 @@ import QuestionManagementModal from './QuestionManagementModal';
 import QuestionImportModal from './QuestionImportModal';
 import { toastSuccess, toastError } from '../../utils/helpers';
 
-const ExamManagement: React.FC = () => {
+interface ExamManagementProps {
+    searchQuery?: string;
+}
+
+const ExamManagement: React.FC<ExamManagementProps> = ({ searchQuery }) => {
     const [exams, setExams] = useState<Exam[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -20,7 +24,7 @@ const ExamManagement: React.FC = () => {
     
     const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
 
-    const fetchExams = async () => {
+    const fetchExams = useCallback(async () => {
         setIsLoading(true);
         try {
             const data = await apiGetExams();
@@ -30,11 +34,11 @@ const ExamManagement: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchExams();
-    }, []);
+    }, [fetchExams]);
 
     const handleOpenFormModal = (exam: Exam | null) => {
         setSelectedExam(exam);
@@ -90,17 +94,23 @@ const ExamManagement: React.FC = () => {
     };
 
     const handleMoveExam = async (currentIndex: number, direction: 'up' | 'down') => {
-        const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+        const displayedExams = getDisplayedExams(); // Make sure to reorder the currently visible list
+        const originalIndex = exams.findIndex(e => e.id === displayedExams[currentIndex].id);
+        
+        const newOriginalIndex = direction === 'up' 
+            ? exams.findIndex(e => e.id === displayedExams[currentIndex - 1].id)
+            : exams.findIndex(e => e.id === displayedExams[currentIndex + 1].id);
 
-        if (newIndex < 0 || newIndex >= exams.length) {
-            return;
-        }
+        if (originalIndex < 0 || newOriginalIndex < 0) return;
 
         const reorderedExams = [...exams];
-        const [movedExam] = reorderedExams.splice(currentIndex, 1);
-        reorderedExams.splice(newIndex, 0, movedExam);
+        const [movedExam] = reorderedExams.splice(originalIndex, 1);
+        
+        // Find the new position in the original array
+        const targetIndex = reorderedExams.findIndex(e => e.id === exams[newOriginalIndex].id);
+        reorderedExams.splice(targetIndex, 0, movedExam);
 
-        // Optimistic UI update
+
         setExams(reorderedExams);
 
         try {
@@ -108,11 +118,17 @@ const ExamManagement: React.FC = () => {
             await apiUpdateExamsOrder(orderedExamIds);
         } catch (err) {
             toastError('Gagal menyimpan urutan baru. Mengembalikan ke urutan sebelumnya.');
-            // Revert on error by refetching
             fetchExams();
         }
     };
+    
+    const getDisplayedExams = () => {
+        if (!searchQuery) return exams;
+        const lowerCaseQuery = searchQuery.toLowerCase();
+        return exams.filter(e => e.name.toLowerCase().includes(lowerCaseQuery));
+    };
 
+    const displayedExams = getDisplayedExams();
 
     if (isLoading) return <LoadingSpinner text="Memuat data ujian..." />;
     if (error) return <p className="text-red-500">{error}</p>;
@@ -125,7 +141,7 @@ const ExamManagement: React.FC = () => {
                         + Buat Ujian Baru
                     </Button>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="w-full overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
@@ -139,15 +155,15 @@ const ExamManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {exams.map((exam, index) => (
+                            {displayedExams.length > 0 ? displayedExams.map((exam, index) => (
                                 <tr key={exam.id}>
                                      <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center space-x-1">
                                             <button
                                                 onClick={() => handleMoveExam(index, 'up')}
-                                                disabled={index === 0}
+                                                disabled={index === 0 || !!searchQuery}
                                                 className="p-1 text-gray-500 rounded-full hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                                                title="Pindah ke atas"
+                                                title={searchQuery ? "Urutan tidak dapat diubah saat mencari" : "Pindah ke atas"}
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
@@ -155,9 +171,9 @@ const ExamManagement: React.FC = () => {
                                             </button>
                                             <button
                                                 onClick={() => handleMoveExam(index, 'down')}
-                                                disabled={index === exams.length - 1}
+                                                disabled={index === displayedExams.length - 1 || !!searchQuery}
                                                 className="p-1 text-gray-500 rounded-full hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                                                title="Pindah ke bawah"
+                                                title={searchQuery ? "Urutan tidak dapat diubah saat mencari" : "Pindah ke bawah"}
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -172,12 +188,18 @@ const ExamManagement: React.FC = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono bg-gray-100 rounded">{exam.token || '-'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                         <Button size="sm" variant="secondary" onClick={() => handleOpenFormModal(exam)}>Edit</Button>
-                                        <Button size="sm" onClick={() => handleOpenQuestionModal(exam)}>Soal</Button>
+                                        <Button size="sm" onClick={() => handleOpenQuestionModal(exam)}>Kelola Soal</Button>
                                         <Button size="sm" variant="secondary" onClick={() => handleOpenImportModal(exam)}>Import</Button>
                                         <Button size="sm" variant="danger" onClick={() => handleDeleteExam(exam.id)}>Hapus</Button>
                                     </td>
                                 </tr>
-                            ))}
+                            )) : (
+                                 <tr>
+                                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                                        {searchQuery ? `Tidak ada ujian yang cocok dengan pencarian "${searchQuery}".` : "Belum ada ujian yang dibuat."}
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

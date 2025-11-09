@@ -27,7 +27,7 @@ const ExamSettings: React.FC = () => {
         fetchSettings();
     }, []);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         if (!settings) return;
         const { name, value } = e.target;
         setSettings({ ...settings, [name]: value });
@@ -103,8 +103,8 @@ const ExamSettings: React.FC = () => {
                  <div className="border-t pt-6">
                     <h3 className="text-lg font-medium text-gray-900">Tampilan Ujian Siswa</h3>
                     <fieldset className="mt-4">
-                        <legend className="sr-only">Tipe Tampilan Soal</legend>
-                        <div className="space-y-4 sm:flex sm:items-center sm:space-y-0 sm:space-x-10">
+                        <legend className="text-sm font-semibold text-gray-700">Tipe Tampilan Soal</legend>
+                        <div className="space-y-4 sm:flex sm:items-center sm:space-y-0 sm:space-x-10 mt-2">
                             <div className="flex items-center">
                                 <input
                                     id="single"
@@ -131,6 +131,39 @@ const ExamSettings: React.FC = () => {
                                 />
                                 <label htmlFor="all" className="ml-3 block text-sm font-medium text-gray-700">
                                     Semua Soal dalam Satu Halaman
+                                </label>
+                            </div>
+                        </div>
+                    </fieldset>
+                     <fieldset className="mt-6">
+                        <legend className="text-sm font-semibold text-gray-700">Gaya Tampilan PG Kompleks</legend>
+                        <div className="space-y-4 sm:flex sm:items-center sm:space-y-0 sm:space-x-10 mt-2">
+                            <div className="flex items-center">
+                                <input
+                                    id="checkbox"
+                                    name="multipleChoiceComplexStyle"
+                                    type="radio"
+                                    value="checkbox"
+                                    checked={settings.multipleChoiceComplexStyle === 'checkbox'}
+                                    onChange={handleChange}
+                                    className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="checkbox" className="ml-3 block text-sm font-medium text-gray-700">
+                                    Checkbox (Standar)
+                                </label>
+                            </div>
+                            <div className="flex items-center">
+                                <input
+                                    id="toggle"
+                                    name="multipleChoiceComplexStyle"
+                                    type="radio"
+                                    value="toggle"
+                                    checked={settings.multipleChoiceComplexStyle === 'toggle'}
+                                    onChange={handleChange}
+                                    className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor="toggle" className="ml-3 block text-sm font-medium text-gray-700">
+                                    Tombol Toggle
                                 </label>
                             </div>
                         </div>

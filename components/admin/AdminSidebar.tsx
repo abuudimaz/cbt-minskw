@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserGroupIcon, BookOpenIcon, ComputerDesktopIcon, ChartBarIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, UserCircleIcon, DocumentTextIcon, ClipboardDocumentListIcon, Cog6ToothIcon } from './AdminIcons';
+import { UserGroupIcon, BookOpenIcon, ComputerDesktopIcon, ChartBarIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, UserCircleIcon, DocumentTextIcon, ClipboardDocumentListIcon, Cog6ToothIcon, CalendarDaysIcon } from './AdminIcons';
 import { AdminTab } from './AdminDashboard';
 
 interface AdminSidebarProps {
@@ -13,6 +13,7 @@ interface AdminSidebarProps {
 const tabs: { id: AdminTab; label: string; icon: React.ComponentType }[] = [
     { id: 'monitoring', label: 'Status Ujian', icon: ComputerDesktopIcon },
     { id: 'exams', label: 'Manajemen Soal', icon: BookOpenIcon },
+    { id: 'examSchedule', label: 'Jadwal Ujian', icon: CalendarDaysIcon },
     { id: 'students', label: 'Manajemen Siswa', icon: UserGroupIcon },
     { id: 'results', label: 'Hasil Ujian', icon: ChartBarIcon },
     { id: 'beritaAcara', label: 'Berita Acara', icon: DocumentTextIcon },

@@ -1,45 +1,56 @@
 import React from 'react';
-import { Question, QuestionType } from '../../types';
+import { Question, QuestionType, ExamSettings } from '../../types';
 import Input from '../shared/Input';
 
 interface QuestionViewerProps {
     question: Question;
     selectedAnswer?: any;
     onSelectAnswer: (questionId: string, value: any) => void;
+    settings: ExamSettings;
 }
 
 const TextWithArabic: React.FC<{ text: string }> = ({ text }) => {
-    // Regex to detect if there's any Arabic character
     const arabicRegex = /[\u0600-\u06FF]/;
-    if (!arabicRegex.test(text)) {
-        return <>{text}</>; // No Arabic, return as is for performance
+    const containsArabic = arabicRegex.test(text);
+
+    if (!containsArabic) {
+        // For non-Arabic text, render it without special styling to use the default Poppins font.
+        return <>{text}</>;
     }
-
-    // Determine overall direction. If it contains any Latin characters, it's LTR. Otherwise, pure Arabic is RTL.
-    const latinRegex = /[a-zA-Z]/;
-    const overallDirection = latinRegex.test(text) ? 'ltr' : 'rtl';
     
-    // Split the text into segments of Arabic and non-Arabic parts.
-    // The regex captures segments of Arabic characters, spaces, and common punctuation, then we filter out empty strings.
-    const parts = text.split(/([\u0600-\u06FF\s.,!؟]+)/g).filter(part => part);
-
+    // Refined logic for mixed content:
+    // The parent span sets the overall block direction (`dir="auto"`) and alignment (`rtl:text-right`).
+    // This allows the browser to correctly handle the flow of mixed LTR and RTL text.
     return (
-        <span dir={overallDirection}>
-            {parts.map((part, index) => {
-                if (arabicRegex.test(part)) {
-                    // This is an Arabic part, apply the Amiri font and specific styling
-                    return <span key={index} className="font-amiri text-xl">{part}</span>;
-                } else {
-                    // This is a Latin/other script part, wrap in fragment to get a key
-                    return <React.Fragment key={index}>{part}</React.Fragment>;
-                }
-            })}
+        <span dir="auto" className="text-xl block rtl:text-right">
+            {
+                // Split the string by capturing Arabic segments (including spaces and common punctuation).
+                // This creates an array of alternating non-Arabic and Arabic parts.
+                text.split(/([\u0600-\u06FF\s\p{P}]+)/u).filter(Boolean).map((part, index) => {
+                    // Test if the current part is an Arabic segment.
+                    if (arabicRegex.test(part)) {
+                        // Apply the special Amiri font only to the Arabic parts.
+                        return <span key={index} className="font-amiri">{part}</span>;
+                    }
+                    // Render non-Arabic parts with the default font (Poppins).
+                    return <span key={index}>{part}</span>;
+                })
+            }
         </span>
     );
 };
 
 
-const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswer, onSelectAnswer }) => {
+// A small component to render the option image consistently.
+const OptionImage: React.FC<{ imageUrl?: string; altText: string }> = ({ imageUrl, altText }) => {
+    if (!imageUrl) {
+        return null;
+    }
+    return <img src={imageUrl} alt={altText} className="mt-2 rounded-md max-w-sm max-h-64 object-contain" />;
+};
+
+
+const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswer, onSelectAnswer, settings }) => {
 
     const renderAnswerInput = () => {
         switch (question.type) {
@@ -49,13 +60,13 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                         {question.options?.map((option, index) => (
                             <div key={option.id}
                                  onClick={() => onSelectAnswer(question.id, option.id)}
-                                 className={`p-4 border rounded-lg cursor-pointer transition-colors flex items-start text-left
+                                 className={`p-4 border rounded-lg cursor-pointer transition-colors flex items-start
                                     ${selectedAnswer === option.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500' : 'border-gray-300 hover:bg-gray-100'}`}
                             >
                                 <span className={`font-bold mr-3`}>{String.fromCharCode(65 + index)}.</span>
                                 <div className="flex-1">
                                     <TextWithArabic text={option.text} />
-                                    {option.optionImageUrl && <img src={option.optionImageUrl} alt={`Opsi ${index+1}`} className="mt-2 rounded-md max-w-xs" />}
+                                    <OptionImage imageUrl={option.optionImageUrl} altText={`Opsi ${index + 1}`} />
                                 </div>
                             </div>
                         ))}
@@ -70,20 +81,31 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                         : [...currentAnswers, optionId];
                     onSelectAnswer(question.id, newAnswers);
                 };
+                
+                const style = settings.multipleChoiceComplexStyle || 'checkbox'; // Fallback to checkbox
+                
                 return (
                     <div className="space-y-3">
                          {question.options?.map((option, index) => {
                             const isChecked = selectedAnswer?.includes(option.id);
+                            const baseClasses = "p-4 border rounded-lg cursor-pointer transition-colors flex items-start";
+                            const selectedClasses = "border-blue-500 bg-blue-50 ring-2 ring-blue-500";
+                            const unselectedClasses = "border-gray-300 hover:bg-gray-100";
+
                             return (
                                 <div key={option.id}
                                      onClick={() => handleComplexChange(option.id)}
-                                     className={`p-4 border rounded-lg cursor-pointer transition-colors flex items-start text-left
-                                        ${isChecked ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500' : 'border-gray-300 hover:bg-gray-100'}`}
+                                     className={`${baseClasses} ${isChecked ? selectedClasses : unselectedClasses}`}
                                 >
-                                    <input type="checkbox" checked={!!isChecked} readOnly className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3 mt-1" />
+                                    {style === 'checkbox' && (
+                                         <input type="checkbox" checked={!!isChecked} readOnly className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3 mt-1" />
+                                    )}
+                                    {style === 'toggle' && (
+                                         <span className={`font-bold mr-3`}>{String.fromCharCode(65 + index)}.</span>
+                                    )}
                                     <div className="flex-1">
                                         <TextWithArabic text={option.text} />
-                                        {option.optionImageUrl && <img src={option.optionImageUrl} alt={`Opsi ${index+1}`} className="mt-2 rounded-md max-w-xs" />}
+                                        <OptionImage imageUrl={option.optionImageUrl} altText={`Opsi ${index + 1}`} />
                                     </div>
                                 </div>
                             );

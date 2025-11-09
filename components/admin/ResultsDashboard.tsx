@@ -7,9 +7,14 @@ import Button from '../shared/Button';
 import { downloadCSV } from '../../utils/helpers';
 import ResultDetailModal from './ResultDetailModal';
 
-const SCORE_THRESHOLD = 50; // Ambang batas untuk menyorot nilai rendah
+const SCORE_THRESHOLD = 50;
 
-const ResultsDashboard: React.FC = () => {
+interface ResultsDashboardProps {
+    initialResultToShow?: ExamResult | null;
+    clearInitialResult?: () => void;
+}
+
+const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ initialResultToShow, clearInitialResult }) => {
     const [results, setResults] = useState<ExamResult[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -33,6 +38,13 @@ const ResultsDashboard: React.FC = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (initialResultToShow && clearInitialResult) {
+            handleOpenDetailModal(initialResultToShow);
+            clearInitialResult();
+        }
+    }, [initialResultToShow, clearInitialResult]);
+
     const handleExport = () => {
         const dataToExport = results.map(r => ({
             nis: r.nis,
@@ -51,7 +63,7 @@ const ResultsDashboard: React.FC = () => {
     };
     
     const handleScoreUpdate = () => {
-        fetchData(); // Refresh the data after a score has been updated
+        fetchData();
         setIsDetailModalOpen(false);
     }
 
@@ -66,7 +78,7 @@ const ResultsDashboard: React.FC = () => {
                         Export ke CSV
                     </Button>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="w-full overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>

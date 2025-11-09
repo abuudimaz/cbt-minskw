@@ -3,12 +3,23 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { KemenagLogo, APP_TITLE } from '../../constants';
 import Button from './Button';
+import { Role } from '../../types';
 
 const Header: React.FC = () => {
     const { user, logout } = useAuth();
 
+    const handleLogout = () => {
+        if (user?.role === Role.STUDENT) {
+            if (window.confirm('Apakah Anda yakin ingin logout? Progres ujian yang belum disimpan mungkin akan hilang.')) {
+                logout();
+            }
+        } else {
+            logout();
+        }
+    };
+
     return (
-        <header className="bg-white shadow-md no-print">
+        <header className="bg-white shadow-md no-print sticky top-0 z-50">
             <div className="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
                 <Link to="/" className="flex items-center space-x-3">
                     <KemenagLogo className="h-10 w-auto" />
@@ -26,7 +37,7 @@ const Header: React.FC = () => {
                            <span className="hidden sm:block text-gray-700">
                                Selamat datang, <span className="font-semibold">{user.name}</span>
                            </span>
-                            <Button onClick={logout} variant="secondary" size="sm">
+                            <Button onClick={handleLogout} variant="secondary" size="sm">
                                 Logout
                             </Button>
                         </>

@@ -27,7 +27,7 @@ const QuestionForm: React.FC<{
         questionText: '',
         questionImageUrl: '',
         type: QuestionType.SINGLE_CHOICE,
-        options: [{ id: `new_opt_${Date.now()}_1`, text: '' }, { id: `new_opt_${Date.now()}_2`, text: '' }],
+        options: [{ id: `new_opt_${Date.now()}_1`, text: '', optionImageUrl: undefined }, { id: `new_opt_${Date.now()}_2`, text: '', optionImageUrl: undefined }],
         matchingPrompts: [{ id: `new_prompt_${Date.now()}`, text: '' }],
         matchingAnswers: [{ id: `new_ans_${Date.now()}`, text: '' }],
         correctAnswer: undefined,
@@ -104,6 +104,24 @@ const QuestionForm: React.FC<{
         }
     };
     
+    const handleRemoveImage = (fieldPath: string, index: number | null = null) => {
+        if (index !== null) {
+            // Handle image removal from options array
+            setFormData((prev: any) => {
+                const newOptions = [...prev.options];
+                const { [fieldPath]: _, ...rest } = newOptions[index]; // Create new option object without the image URL
+                newOptions[index] = rest;
+                return { ...prev, options: newOptions };
+            });
+        } else {
+            // Handle image removal from top-level question data
+             setFormData((prev: any) => {
+                const { [fieldPath]: _, ...rest } = prev; // Create new form data object without the image URL
+                return rest;
+             });
+        }
+    };
+
     // --- Change Handlers ---
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -177,7 +195,19 @@ const QuestionForm: React.FC<{
                     </div>
                      <div className="pl-8 flex items-center gap-4">
                         <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'optionImageUrl', index)} className="text-sm text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100" />
-                        {opt.optionImageUrl && <img src={opt.optionImageUrl} alt="Preview" className="h-16 w-auto rounded border p-1 bg-white"/>}
+                        {opt.optionImageUrl && (
+                            <div className="relative">
+                                <img src={opt.optionImageUrl} alt="Preview" className="h-16 w-auto rounded border p-1 bg-white"/>
+                                <button 
+                                    type="button" 
+                                    onClick={() => handleRemoveImage('optionImageUrl', index)}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold leading-none"
+                                    title="Remove image"
+                                >
+                                    &times;
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             ))}
@@ -267,7 +297,19 @@ const QuestionForm: React.FC<{
                  <div className="flex items-center gap-4">
                      <label className="text-sm font-medium text-gray-700">Gambar Soal:</label>
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'questionImageUrl')} className="text-sm text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100" />
-                    {formData.questionImageUrl && <img src={formData.questionImageUrl} alt="Preview Soal" className="h-24 w-auto rounded border p-1 bg-white"/>}
+                    {formData.questionImageUrl && (
+                         <div className="relative">
+                            <img src={formData.questionImageUrl} alt="Preview Soal" className="h-24 w-auto rounded border p-1 bg-white"/>
+                             <button 
+                                type="button" 
+                                onClick={() => handleRemoveImage('questionImageUrl')}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold leading-none"
+                                title="Remove image"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                    )}
                  </div>
                  <div>
                     <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Tipe Soal</label>

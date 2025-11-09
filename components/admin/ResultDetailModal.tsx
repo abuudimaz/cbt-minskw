@@ -20,12 +20,14 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [finalScore, setFinalScore] = useState<number>(result.score);
+    const [visibleAnswers, setVisibleAnswers] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (isOpen) {
             const fetchData = async () => {
                 setIsLoading(true);
                 setError('');
+                setVisibleAnswers(new Set()); // Reset visible answers on open
                 try {
                     const [submissionData, questionsData] = await Promise.all([
                         apiGetSubmission(result.nis, result.examId),
@@ -36,7 +38,7 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
                     }
                     setSubmission(submissionData);
                     setQuestions(questionsData);
-                    setFinalScore(result.score); // Reset final score on open
+                    setFinalScore(result.score);
                 } catch (err: any) {
                     setError(err.message || 'Gagal memuat data detail.');
                 } finally {
@@ -62,6 +64,18 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
 
     const findAnswer = (questionId: string): Answer | undefined => {
         return submission?.answers.find(a => a.questionId === questionId);
+    };
+
+    const toggleAnswerVisibility = (questionId: string) => {
+        setVisibleAnswers(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(questionId)) {
+                newSet.delete(questionId);
+            } else {
+                newSet.add(questionId);
+            }
+            return newSet;
+        });
     };
 
     const renderAnswer = (question: Question, answer: Answer | undefined) => {
@@ -132,6 +146,7 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
                         {questions.map((q, index) => {
                             const studentAnswer = findAnswer(q.id);
                             const isCorrect = isAnswerCorrect(q, studentAnswer);
+                            const isKeyVisible = visibleAnswers.has(q.id);
                             
                             let borderColor = 'border-gray-200';
                             if(isCorrect === true) borderColor = 'border-green-400';
@@ -139,7 +154,19 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
 
                             return (
                                 <div key={q.id} className={`pb-4 pt-2 px-3 border-l-4 ${borderColor}`}>
-                                    <p className="font-semibold text-gray-800">{index + 1}. {q.questionText}</p>
+                                    <div className="flex justify-between items-start gap-4">
+                                        <p className="font-semibold text-gray-800 flex-1">{index + 1}. {q.questionText}</p>
+                                        {q.type !== QuestionType.ESSAY && q.type !== QuestionType.SURVEY && (
+                                            <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                onClick={() => toggleAnswerVisibility(q.id)}
+                                                className="flex-shrink-0"
+                                            >
+                                                {isKeyVisible ? 'Sembunyikan Kunci' : 'Lihat Kunci'}
+                                            </Button>
+                                        )}
+                                    </div>
                                     <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                         <div>
                                             <h4 className="text-sm font-bold text-gray-600 mb-1 flex items-center">
@@ -149,7 +176,7 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
                                             </h4>
                                             {renderAnswer(q, studentAnswer)}
                                         </div>
-                                        { isCorrect === false && q.type !== QuestionType.ESSAY && (
+                                        {isKeyVisible && (
                                             <div className="bg-green-50 p-2 rounded-md border border-green-200">
                                                 <h4 className="text-sm font-bold text-green-700 mb-1">Kunci Jawaban:</h4>
                                                 {renderCorrectAnswer(q)}

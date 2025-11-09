@@ -65,7 +65,8 @@ const StudentDashboard: React.FC = () => {
         downloadCSV(dataToExport, `hasil_ujian_${user.name.replace(/\s+/g, '_')}.csv`);
     };
 
-    const formatExamTime = (date: Date | null | undefined): string | null => {
+    // FIX: Changed type of `date` to accept string as well, since data from localStorage will be a string.
+    const formatExamTime = (date: Date | string | null | undefined): string | null => {
         if (!date) return null;
         return new Date(date).toLocaleString('id-ID', {
             day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'

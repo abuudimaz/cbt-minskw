@@ -9,7 +9,11 @@ import StudentImportModal from './StudentImportModal';
 import ConfirmationModal from '../shared/ConfirmationModal';
 import { toastSuccess, toastError, downloadCSV } from '../../utils/helpers';
 
-const StudentManagement: React.FC = () => {
+interface StudentManagementProps {
+    searchQuery?: string;
+}
+
+const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) => {
     const [students, setStudents] = useState<Student[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -117,7 +121,13 @@ const StudentManagement: React.FC = () => {
         }
     };
 
-    // --- BULK ACTION HANDLERS ---
+    const displayedStudents = searchQuery
+        ? students.filter(s => 
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.nis.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        : students;
+
     const handleSelect = (nis: string) => {
         setSelectedStudents(prev => {
             const newSelection = new Set(prev);
@@ -132,7 +142,7 @@ const StudentManagement: React.FC = () => {
 
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
-            setSelectedStudents(new Set(students.map(s => s.nis)));
+            setSelectedStudents(new Set(displayedStudents.map(s => s.nis)));
         } else {
             setSelectedStudents(new Set());
         }
@@ -149,7 +159,7 @@ const StudentManagement: React.FC = () => {
                     await apiDeleteStudents(Array.from(selectedStudents));
                     toastSuccess(`${selectedStudents.size} siswa berhasil dihapus.`);
                     setSelectedStudents(new Set());
-                    fetchStudents(); // Refresh the list
+                    fetchStudents();
                 } catch (err) {
                     toastError('Gagal menghapus siswa terpilih.');
                 } finally {
@@ -163,7 +173,7 @@ const StudentManagement: React.FC = () => {
     const handleExportSelected = () => {
         const dataToExport = students
             .filter(s => selectedStudents.has(s.nis))
-            .map(({ nis, name, class: studentClass, room }) => ({ nis, name, class: studentClass, room })); // Exclude password
+            .map(({ nis, name, class: studentClass, room }) => ({ nis, name, class: studentClass, room })); 
         
         if (dataToExport.length > 0) {
             downloadCSV(dataToExport, `export_siswa_${new Date().toISOString().split('T')[0]}.csv`);
@@ -175,13 +185,12 @@ const StudentManagement: React.FC = () => {
     if (isLoading) return <LoadingSpinner text="Memuat data siswa..." />;
     if (error) return <p className="text-red-500">{error}</p>;
 
-    const isAllSelected = students.length > 0 && selectedStudents.size === students.length;
+    const isAllSelected = displayedStudents.length > 0 && selectedStudents.size === displayedStudents.length;
 
     return (
         <>
             <Card title="Manajemen Data Siswa">
                 <div className="mb-4 flex justify-between items-center">
-                    {/* Bulk Actions Bar */}
                     <div className="flex-1">
                         {selectedStudents.size > 0 && (
                             <div className="flex items-center space-x-2 bg-gray-100 p-2 rounded-md">
@@ -195,8 +204,6 @@ const StudentManagement: React.FC = () => {
                             </div>
                         )}
                     </div>
-
-                    {/* Main Actions */}
                     <div className="flex space-x-2">
                         <Button onClick={() => setIsImportModalOpen(true)} variant="secondary">
                             Import Siswa
@@ -206,7 +213,7 @@ const StudentManagement: React.FC = () => {
                         </Button>
                     </div>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="w-full overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
@@ -217,6 +224,7 @@ const StudentManagement: React.FC = () => {
                                         onChange={handleSelectAll}
                                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         aria-label="Pilih semua siswa"
+                                        disabled={searchQuery ? true : false}
                                     />
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIS</th>
@@ -227,7 +235,7 @@ const StudentManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {students.map((student) => (
+                            {displayedStudents.length > 0 ? displayedStudents.map((student) => (
                                 <tr key={student.nis} className={selectedStudents.has(student.nis) ? 'bg-blue-50' : ''}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <input
@@ -247,7 +255,13 @@ const StudentManagement: React.FC = () => {
                                         <Button size="sm" variant="danger" onClick={() => handleDeleteStudent(student.nis, student.name)}>Hapus</Button>
                                     </td>
                                 </tr>
-                            ))}
+                            )) : (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                                        {searchQuery ? `Tidak ada siswa yang cocok dengan pencarian "${searchQuery}".` : "Tidak ada data siswa."}
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

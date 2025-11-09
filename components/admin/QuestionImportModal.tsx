@@ -106,7 +106,7 @@ const QuestionImportModal: React.FC<QuestionImportModalProps> = ({ isOpen, onClo
                     <ul className="list-disc list-inside mt-1">
                         <li>Kolom wajib: <strong>questionText</strong>.</li>
                         <li>Kolom opsi: <strong>optionA</strong>, <strong>optionB</strong>, dst.</li>
-                        <li>Kolom opsional: <strong>questionType</strong> (Default: 'Pilihan Ganda'), <strong>questionImageUrl</strong>, <strong>optionAImageUrl</strong>.</li>
+                        <li>Kolom opsional: <strong>questionType</strong>, <strong>questionImageUrl</strong>, <strong>optionAImageUrl</strong>, <strong>optionBImageUrl</strong>, dst.</li>
                         <li>Kolom <strong>correctAnswer</strong>:
                             <ul className="list-['-_'] list-inside ml-4">
                                 <li>Untuk Pilihan Ganda: isi A, B, C, atau D.</li>

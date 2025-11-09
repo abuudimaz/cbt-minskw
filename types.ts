@@ -1,41 +1,42 @@
+// --- TYPE DEFINITIONS ---
+
 export enum Role {
-    STUDENT = 'student',
     ADMIN = 'admin',
+    STUDENT = 'student',
 }
 
-export type User = {
-    id: string; // for admin it's username, for student it's nis
+export enum AppView {
+    LOGIN_SELECTOR,
+    STUDENT_LOGIN,
+    ADMIN_LOGIN,
+    STUDENT_DASHBOARD,
+    ADMIN_DASHBOARD,
+    STUDENT_EXAM,
+}
+
+export interface User {
+    id: string;
     name: string;
     role: Role;
-    // Student-specific
     nis?: string;
     class?: string;
     room?: string;
-};
+}
 
-export type Student = {
+export interface Student {
     nis: string;
     name: string;
     class: string;
     room: string;
-    password?: string; // only for creation/update
-};
-
-export enum AppView {
-    LOGIN_SELECTOR = 'login_selector',
-    STUDENT_LOGIN = 'student_login',
-    ADMIN_LOGIN = 'admin_login',
-    STUDENT_DASHBOARD = 'student_dashboard',
-    ADMIN_DASHBOARD = 'admin_dashboard',
-    STUDENT_EXAM = 'student_exam',
+    password?: string;
 }
 
 export enum AssessmentType {
-    LITERASI = 'Literasi',
-    NUMERASI = 'Numerasi',
-    SAINS = 'Sains',
-    SOSIAL = 'Sosial',
-    LAINNYA = 'Lainnya',
+    LITERASI = "Literasi",
+    NUMERASI = "Numerasi",
+    SAINS = "Sains",
+    SOSIAL = "Sosial",
+    AGAMA = "Agama",
 }
 
 export interface Exam {
@@ -45,17 +46,17 @@ export interface Exam {
     duration: number; // in minutes
     questionCount: number;
     token?: string;
-    startTime?: Date;
-    endTime?: Date;
+    startTime?: Date | string;
+    endTime?: Date | string;
 }
 
 export enum QuestionType {
-    SINGLE_CHOICE = 'Pilihan Ganda',
-    MULTIPLE_CHOICE_COMPLEX = 'Pilihan Ganda Kompleks',
-    MATCHING = 'Menjodohkan',
-    SHORT_ANSWER = 'Isian Singkat',
-    ESSAY = 'Esai',
-    SURVEY = 'Survei', // Not used in forms, but good to have
+    SINGLE_CHOICE = "Pilihan Ganda",
+    MULTIPLE_CHOICE_COMPLEX = "Pilihan Ganda Kompleks",
+    MATCHING = "Menjodohkan",
+    SHORT_ANSWER = "Isian Singkat",
+    ESSAY = "Uraian",
+    SURVEY = "Survei",
 }
 
 export interface QuestionOption {
@@ -78,7 +79,7 @@ export interface Question {
     options?: QuestionOption[];
     matchingPrompts?: MatchingItem[];
     matchingAnswers?: MatchingItem[];
-    correctAnswer?: any; // string for single choice/short answer, string[] for multiple choice, Record<string, string> for matching
+    correctAnswer?: any; // Can be string for single choice/short answer, string[] for complex, or Record<string, string> for matching
 }
 
 export interface Answer {
@@ -86,22 +87,31 @@ export interface Answer {
     value: any;
 }
 
+export interface Submission {
+    id: string;
+    studentId: string;
+    examId: string;
+    answers: Answer[];
+    submittedAt: string;
+    score?: number;
+}
+
 export interface ExamResult {
     id: string;
     nis: string;
-    name: string; // student name
+    name: string;
     class: string;
     examId: string;
     examName: string;
     score: number;
-    submittedAt: string; // ISO date string
+    submittedAt: string;
 }
 
 export enum StudentExamStatus {
-    NOT_STARTED = 'Belum Mulai',
-    IN_PROGRESS = 'Mengerjakan',
-    FINISHED = 'Selesai',
-    LOGGED_OUT = 'Logout', // Or some other status for disconnected
+    NOT_STARTED = "Belum Mulai",
+    IN_PROGRESS = "Mengerjakan",
+    FINISHED = "Selesai",
+    LOGGED_OUT = "Logout",
 }
 
 export interface MonitoredStudent {
@@ -111,15 +121,6 @@ export interface MonitoredStudent {
     status: StudentExamStatus;
 }
 
-export interface Submission {
-    id: string;
-    studentId: string;
-    examId: string;
-    answers: Answer[];
-    submittedAt: string; // ISO date string
-    score?: number;
-}
-
 export interface ExamSettings {
     assessmentTitle: string;
     academicYear: string;
@@ -127,4 +128,5 @@ export interface ExamSettings {
     headmasterName: string;
     headmasterNip: string;
     questionDisplay: 'single' | 'all';
+    multipleChoiceComplexStyle: 'checkbox' | 'toggle';
 }

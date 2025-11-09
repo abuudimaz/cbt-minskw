@@ -38,6 +38,7 @@ const initDB = () => {
             headmasterName: 'Nama Kepala Sekolah, S.Pd.',
             headmasterNip: '19... .... ....',
             questionDisplay: 'single',
+            multipleChoiceComplexStyle: 'checkbox', // Default value
          }));
     }
      if (!localStorage.getItem(DB.monitoring)) {
@@ -438,7 +439,12 @@ export const apiResetAdminPassword = async (adminId: string): Promise<void> => {
 
 export const apiGetExamSettings = async (): Promise<ExamSettings> => {
     await delay(200);
-    return getOne<ExamSettings>(DB.settings) as ExamSettings;
+    const settings = getOne<ExamSettings>(DB.settings);
+    // Add default for the new setting if it doesn't exist
+    if (settings && typeof settings.multipleChoiceComplexStyle === 'undefined') {
+        settings.multipleChoiceComplexStyle = 'checkbox';
+    }
+    return settings as ExamSettings;
 };
 
 export const apiUpdateExamSettings = async (settings: ExamSettings): Promise<ExamSettings> => {
