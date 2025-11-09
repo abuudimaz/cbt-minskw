@@ -33,7 +33,7 @@ const OptionImage: React.FC<{ imageUrl?: string; altText: string }> = ({ imageUr
     if (!imageUrl) {
         return null;
     }
-    return <img src={imageUrl} alt={altText} className="mt-2 rounded-md max-w-sm max-h-64 object-contain" />;
+    return <img src={imageUrl} alt={altText} className="mt-2 rounded-md max-w-full max-h-64 object-contain" />;
 };
 
 

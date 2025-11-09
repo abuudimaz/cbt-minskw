@@ -38,9 +38,15 @@ const StudentDashboard: React.FC = () => {
         const token = exam.token;
         if (token) {
             const enteredToken = prompt(`Masukkan token untuk memulai ujian "${exam.name}":`);
-            if (enteredToken === token) {
+            
+            // Handle case where user cancels the prompt
+            if (enteredToken === null) {
+                return; 
+            }
+            // Validate the entered token against the exam's token, ignoring leading/trailing whitespace.
+            if (enteredToken.trim() === token) {
                 selectExam(exam);
-            } else if (enteredToken !== null) {
+            } else {
                 toastError('Token yang Anda masukkan salah.');
             }
         } else {

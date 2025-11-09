@@ -17,6 +17,8 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
     const [students, setStudents] = useState<Student[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [classes, setClasses] = useState<string[]>([]);
+    const [selectedClass, setSelectedClass] = useState('all');
 
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -43,6 +45,8 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
         try {
             const data = await apiGetStudents();
             setStudents(data);
+            const uniqueClasses = [...new Set(data.map(s => s.class))].sort();
+            setClasses(uniqueClasses);
         } catch (err) {
             setError('Gagal memuat data siswa.');
         } finally {
@@ -121,12 +125,13 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
         }
     };
 
-    const displayedStudents = searchQuery
-        ? students.filter(s => 
+    const displayedStudents = students
+        .filter(s => selectedClass === 'all' || s.class === selectedClass)
+        .filter(s => 
+            !searchQuery || 
             s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             s.nis.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        : students;
+        );
 
     const handleSelect = (nis: string) => {
         setSelectedStudents(prev => {
@@ -190,7 +195,19 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
     return (
         <>
             <Card title="Manajemen Data Siswa">
-                <div className="mb-4 flex justify-end">
+                <div className="mb-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                     <div>
+                        <label htmlFor="class-filter" className="sr-only">Filter Berdasarkan Kelas</label>
+                        <select 
+                            id="class-filter"
+                            value={selectedClass} 
+                            onChange={e => setSelectedClass(e.target.value)}
+                            className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        >
+                            <option value="all">Semua Kelas</option>
+                            {classes.map(cls => <option key={cls} value={cls}>{cls}</option>)}
+                        </select>
+                    </div>
                     <div className="flex space-x-2">
                         <Button onClick={() => setIsImportModalOpen(true)} variant="secondary">
                             Import Siswa
