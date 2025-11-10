@@ -26,6 +26,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({ isOpen, onClose, onSave, 
     const [formData, setFormData] = useState({
         name: '',
         type: AssessmentType.BAHASA_INDONESIA,
+        category: '',
         duration: 60,
         token: '',
         startTime: '',
@@ -38,6 +39,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({ isOpen, onClose, onSave, 
             setFormData({
                 name: exam.name,
                 type: exam.type,
+                category: exam.category || '',
                 duration: exam.duration,
                 token: exam.token || '',
                 // Format for datetime-local input: YYYY-MM-DDTHH:mm
@@ -48,6 +50,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({ isOpen, onClose, onSave, 
             setFormData({
                 name: '',
                 type: AssessmentType.BAHASA_INDONESIA,
+                category: '',
                 duration: 60,
                 token: '',
                 startTime: '',
@@ -96,6 +99,7 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({ isOpen, onClose, onSave, 
         const examData: Omit<Exam, 'id' | 'questionCount'> = {
             name: formData.name,
             type: formData.type,
+            category: formData.category || undefined,
             duration: formData.duration,
             token: formData.token || undefined,
             // Convert local datetime string back to Date object
@@ -123,6 +127,13 @@ const ExamFormModal: React.FC<ExamFormModalProps> = ({ isOpen, onClose, onSave, 
                         ))}
                     </select>
                 </div>
+                <Input
+                    label="Kategori (opsional)"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    placeholder="Contoh: Ujian Sekolah, Latihan"
+                />
                 <Input label="Durasi (menit)" name="duration" type="number" value={formData.duration} onChange={handleChange} required />
                 
                 <div>

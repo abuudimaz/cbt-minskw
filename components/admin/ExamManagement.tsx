@@ -125,7 +125,10 @@ const ExamManagement: React.FC<ExamManagementProps> = ({ searchQuery }) => {
     const getDisplayedExams = () => {
         if (!searchQuery) return exams;
         const lowerCaseQuery = searchQuery.toLowerCase();
-        return exams.filter(e => e.name.toLowerCase().includes(lowerCaseQuery));
+        return exams.filter(e => 
+            e.name.toLowerCase().includes(lowerCaseQuery) ||
+            (e.category && e.category.toLowerCase().includes(lowerCaseQuery))
+        );
     };
 
     const displayedExams = getDisplayedExams();
@@ -147,6 +150,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({ searchQuery }) => {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Urutan</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Ujian</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipe</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durasi</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Soal</th>
@@ -182,6 +186,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({ searchQuery }) => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{exam.name}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exam.category || '-'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exam.type}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exam.duration} menit</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exam.questionCount}</td>
@@ -195,7 +200,7 @@ const ExamManagement: React.FC<ExamManagementProps> = ({ searchQuery }) => {
                                 </tr>
                             )) : (
                                  <tr>
-                                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                                    <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                                         {searchQuery ? `Tidak ada ujian yang cocok dengan pencarian "${searchQuery}".` : "Belum ada ujian yang dibuat."}
                                     </td>
                                 </tr>

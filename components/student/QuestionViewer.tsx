@@ -62,7 +62,7 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                             <div key={option.id}
                                  onClick={() => onSelectAnswer(question.id, option.id)}
                                  className={`p-4 border rounded-lg cursor-pointer transition-colors flex items-start
-                                    ${selectedAnswer === option.id ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500' : 'border-gray-300 hover:bg-gray-100'}`}
+                                    ${selectedAnswer === option.id ? 'border-blue-500 bg-[#f0f0f0] ring-2 ring-blue-500' : 'border-gray-300 hover:bg-gray-100'}`}
                             >
                                 <span className={`font-bold mr-3`}>{String.fromCharCode(65 + index)}.</span>
                                 <div className="flex-1">
@@ -90,7 +90,7 @@ const QuestionViewer: React.FC<QuestionViewerProps> = ({ question, selectedAnswe
                          {question.options?.map((option, index) => {
                             const isChecked = selectedAnswer?.includes(option.id);
                             const baseClasses = "p-4 border rounded-lg cursor-pointer transition-colors flex items-center";
-                            const selectedClasses = "border-blue-500 bg-blue-50 ring-2 ring-blue-500";
+                            const selectedClasses = "border-blue-500 bg-[#f0f0f0] ring-2 ring-blue-500";
                             const unselectedClasses = "border-gray-300 hover:bg-gray-100";
 
                             return (

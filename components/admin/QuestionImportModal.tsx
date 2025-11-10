@@ -10,6 +10,53 @@ interface QuestionImportModalProps {
     exam: Exam;
 }
 
+const handleDownloadTemplate = () => {
+    const headers = [
+        "Teks Pertanyaan",
+        "Tipe Soal",
+        "URL Gambar Pertanyaan",
+        "Teks Opsi A",
+        "URL Gambar Opsi A",
+        "Teks Opsi B",
+        "URL Gambar Opsi B",
+        "Teks Opsi C",
+        "URL Gambar Opsi C",
+        "Teks Opsi D",
+        "URL Gambar Opsi D",
+        "Kunci Jawaban"
+    ];
+
+    const sampleData = [
+        "Apa ibukota Indonesia?",
+        "Pilihan Ganda",
+        "",
+        "Jakarta", "", "Bandung", "", "Surabaya", "", "Medan", "",
+        "A"
+    ];
+    
+    const sampleData2 = [
+        "Pilih dua angka genap.",
+        "Pilihan Ganda Kompleks",
+        "",
+        "1", "", "2", "", "3", "", "4", "",
+        "B,D"
+    ];
+
+    const sampleData3 = [
+        "Jawab dengan singkat, apa warna bendera Indonesia?",
+        "Isian Singkat",
+        "", "", "", "", "", "", "", "", "", "",
+        "Merah Putih"
+    ];
+
+    const wsData = [headers, sampleData, sampleData2, sampleData3];
+    const ws = (window as any).XLSX.utils.aoa_to_sheet(wsData);
+    const wb = (window as any).XLSX.utils.book_new();
+    (window as any).XLSX.utils.book_append_sheet(wb, ws, "Template");
+    (window as any).XLSX.writeFile(wb, "template_import_soal.xlsx");
+};
+
+
 const QuestionImportModal: React.FC<QuestionImportModalProps> = ({ isOpen, onClose, onImport, exam }) => {
     const [questions, setQuestions] = useState<Omit<Question, 'id' | 'examId'>[]>([]);
     const [error, setError] = useState('');
@@ -129,27 +176,22 @@ const QuestionImportModal: React.FC<QuestionImportModalProps> = ({ isOpen, onClo
         <Modal isOpen={isOpen} onClose={onClose} title={`Import Soal untuk ${exam.name}`} size="xl">
             <div className="space-y-4">
                 <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded-md border">
-                    <p className="font-semibold">Instruksi Impor:</p>
-                    <p className="mt-1">Pastikan file Excel (.xlsx) Anda mengikuti urutan kolom yang benar. Baris pertama akan diabaikan (dianggap sebagai header).</p>
-                    <ul className="list-none mt-2 space-y-1 font-mono text-xs">
-                        <li><strong>Kolom A:</strong> Teks Pertanyaan (Wajib)</li>
-                        <li><strong>Kolom B:</strong> Tipe Soal (Opsional, default: 'Pilihan Ganda')</li>
-                        <li><strong>Kolom C:</strong> URL Gambar Pertanyaan (Opsional)</li>
-                        <li><strong>Kolom D:</strong> Teks Opsi A</li>
-                        <li><strong>Kolom E:</strong> URL Gambar Opsi A (Opsional)</li>
-                        <li><strong>Kolom F:</strong> Teks Opsi B</li>
-                        <li><strong>Kolom G:</strong> URL Gambar Opsi B (Opsional)</li>
-                        <li><strong>Kolom H:</strong> Teks Opsi C</li>
-                        <li><strong>Kolom I:</strong> URL Gambar Opsi C (Opsional)</li>
-                        <li><strong>Kolom J:</strong> Teks Opsi D</li>
-                        <li><strong>Kolom K:</strong> URL Gambar Opsi D (Opsional)</li>
-                        <li><strong>Kolom L:</strong> Kunci Jawaban (Wajib untuk PG/PGK/Isian Singkat)</li>
-    </ul>
+                    <div className="flex justify-between items-center mb-2">
+                         <p className="font-semibold">Instruksi Impor:</p>
+                        <Button type="button" variant="secondary" size="sm" onClick={handleDownloadTemplate}>
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Unduh Template
+                        </Button>
+                    </div>
+
+                    <p className="mt-1">Gunakan tombol "Unduh Template" untuk mendapatkan format file Excel (.xlsx) yang benar. Isi template tersebut dan unggah kembali di sini. File CSV juga didukung.</p>
                      <p className="mt-2 text-xs">
                         <strong>*Kunci Jawaban:</strong> Untuk PG, tulis 'A', 'B', 'C', atau 'D'. Untuk PG Kompleks, pisahkan dengan koma (misal: 'A,C'). Untuk Isian Singkat, tulis jawaban yang benar.
                     </p>
                 </div>
-                <input type="file" accept=".xlsx" onChange={handleFileChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                <input type="file" accept=".xlsx, .csv" onChange={handleFileChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                 {isProcessing && <p>Memproses file...</p>}
                 {error && <p className="text-red-500 text-sm">{error}</p>}
                 {questions.length > 0 && (

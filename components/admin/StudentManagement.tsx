@@ -254,7 +254,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {displayedStudents.length > 0 ? displayedStudents.map((student) => (
-                                <tr key={student.nis} className={selectedStudents.has(student.nis) ? 'bg-blue-50' : ''}>
+                                <tr key={student.nis} className={selectedStudents.has(student.nis) ? 'bg-[#f0f0f0]' : ''}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <input
                                             type="checkbox"

@@ -46,7 +46,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab, is
                                 isCollapsed ? 'justify-center' : 'px-6'
                             } ${
                                 activeTab === tab.id
-                                    ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600 font-semibold'
+                                    ? 'bg-[#f0f0f0] text-blue-700 border-l-4 border-blue-600 font-semibold'
                                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
                             }`}
                         >

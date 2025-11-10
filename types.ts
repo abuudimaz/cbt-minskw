@@ -52,6 +52,7 @@ export interface Exam {
     id: string;
     name: string;
     type: AssessmentType;
+    category?: string;
     duration: number; // in minutes
     questionCount: number;
     token?: string;

@@ -196,7 +196,7 @@ const ResultDetailModal: React.FC<ResultDetailModalProps> = ({ isOpen, onClose, 
                                                             badges.push(<span key="student-wrong" className="text-xs font-semibold text-red-800">[Jawaban Siswa]</span>);
                                                         }
                                                     } else {
-                                                        optionClasses += " bg-blue-100 border-blue-500 ring-2 ring-blue-500";
+                                                        optionClasses += " bg-[#f0f0f0] border-blue-500 ring-2 ring-blue-500";
                                                         badges.push(<span key="student" className="text-xs font-semibold text-blue-800">[Jawaban Siswa]</span>);
                                                     }
                                                 } else if (isKeyVisible && isCorrectAnswer) {
