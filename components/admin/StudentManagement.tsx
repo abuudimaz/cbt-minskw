@@ -125,6 +125,17 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
         }
     };
 
+    const handleExportAllStudents = () => {
+        // We use the full `students` list, ignoring filters.
+        const dataToExport = students.map(({ nis, name, class: studentClass, room }) => ({ nis, name, class: studentClass, room }));
+        
+        if (dataToExport.length > 0) {
+            downloadCSV(dataToExport, `daftar_seluruh_siswa_${new Date().toISOString().split('T')[0]}.csv`);
+        } else {
+            toastError("Tidak ada data siswa untuk diekspor.");
+        }
+    };
+
     const displayedStudents = students
         .filter(s => selectedClass === 'all' || s.class === selectedClass)
         .filter(s => 
@@ -208,7 +219,10 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ searchQuery }) =>
                             {classes.map(cls => <option key={cls} value={cls}>{cls}</option>)}
                         </select>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
+                         <Button onClick={handleExportAllStudents} variant="secondary">
+                            Unduh Daftar Siswa
+                        </Button>
                         <Button onClick={() => setIsImportModalOpen(true)} variant="secondary">
                             Import Siswa
                         </Button>
